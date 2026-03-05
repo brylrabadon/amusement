@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Manage Rides - AmusePark</title>
+  <link rel="stylesheet" href="../css/style.css" />
+</head>
+<body>
+<nav class="admin-nav">
+  <a class="logo" href="../index.html">Amuse<span>Park</span></a>
+  <ul>
+    <li><a href="admin-dashboard.html">Dashboard</a></li>
+    <li><a href="rides.html" class="active">Rides</a></li>
+    <li><a href="bookings.html">Bookings</a></li>
+    <li><a href="ticket-types.html">Ticket Types</a></li>
+    <li><a href="index.html" onclick="Auth.logout('login.html');return false;" style="color:#dc2626;font-weight:600;">Logout</a></li>
+
+  </ul>
+</nav>
+<div class="page-header" style="display:flex;align-items:center;justify-content:space-between;padding:2rem 3rem;">
+  <div><h1 style="text-align:left;">Ride Management</h1><p style="text-align:left;color:#bfdbfe;">Manage all park attractions</p></div>
+  <button class="btn btn-yellow" onclick="openModal()">+ Add Ride</button>
+</div>
+<div class="container">
+  <div class="grid grid-2" id="rides-grid"></div>
+</div>
+
+<!-- Modal -->
+<div class="modal-overlay" id="modal">
+  <div class="modal">
+    <div class="modal-header">
+      <h2 id="modal-title">Add Ride</h2>
+      <button class="modal-close" onclick="closeModal()">✕</button>
+    </div>
+    <div class="form-group"><label>Name *</label><input id="f-name" /></div>
+    <div class="form-group"><label>Description</label><textarea id="f-desc" rows="3"></textarea></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;">
+      <div class="form-group"><label>Category</label>
+        <select id="f-cat"><option>Thrill</option><option>Family</option><option>Kids</option><option>Water</option><option>Classic</option></select>
+      </div>
+      <div class="form-group"><label>Status</label>
+        <select id="f-status"><option>Open</option><option>Closed</option><option>Maintenance</option></select>
+      </div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:1rem;">
+  <div class="form-group"><label>Duration (min)</label><input id="f-dur" type="number" /></div>
+  <div class="form-group"><label>Min Height (cm)</label><input id="f-height" type="number" /></div>
+  <div class="form-group"><label>Max Capacity</label><input id="f-cap" type="number" /></div>
+</div>
+<div class="form-group">
+  <label>Price (₱)</label>
+  <input id="f-price" type="number" step="0.01" min="0" />
+</div>
+<div class="form-group">
+  <label>Ride Image</label>
+  <input id="f-img-file" type="file" accept="image/*" />
+  <small style="display:block;margin-top:.25rem;color:#94a3b8;font-size:.8rem;">
+    Upload a photo for this ride. Leaving this empty will keep the current image.
+  </small>
+</div>
+    </div>
+    <div style="display:flex;align-items:center;gap:.5rem;margin-bottom:1rem;"><input type="checkbox" id="f-feat" /><label for="f-feat" style="margin:0;">Featured ride</label></div>
+    <div style="display:flex;gap:.75rem;">
+      <button class="btn btn-outline" onclick="closeModal()" style="flex:1;">Cancel</button>
+      <button class="btn btn-primary" onclick="saveRide()" style="flex:1;" id="save-btn">Save Ride</button>
+    </div>
+  </div>
+</div>
+
+<script src="../js/api.js"></script>
+<script>
+let rides = [], editId = null, currentImg = '';
+const catColors = {Thrill:'badge-red',Family:'badge-green',Kids:'badge-purple',Water:'badge-blue',Classic:'badge-gray'};
+const statusDot = {Open:'#16a34a',Closed:'#dc2626',Maintenance:'#ca8a04'};
+
+async function load() {
+  rides = await http.get('/rides');
+  render();
+}
+
+function render() {
+  document.getElementById('rides-grid').innerHTML = rides.map(r => `
+    <div class="card" style="padding:1.25rem;display:flex;gap:1rem;">
+      <div style="flex:1;">
+        <div style="display:flex;align-items:center;gap:.5rem;margin-bottom:.35rem;">
+          <strong>${r.name}</strong>
+          ${r.is_featured ? '<span class="badge badge-yellow" style="background:#fef9c3;color:#ca8a04;">Featured</span>' : ''}
+        </div>
+        ${r.image_url
+          ? `<img src="${r.image_url}" alt="${r.name}" style="width:140px;height:90px;object-fit:cover;border-radius:.5rem;margin-bottom:.5rem;box-shadow:0 1px 4px rgba(0,0,0,.12);" />`
+          : ''
+        }
+        <div style="display:flex;gap:.5rem;margin-bottom:.5rem;align-items:center;justify-content:space-between;">
+          <div>
+            <span class="badge ${catColors[r.category]||'badge-gray'}">${r.category}</span>
+            <span style="display:inline-flex;align-items:center;gap:.3rem;font-size:.8rem;color:#64748b;margin-left:.5rem;">
+              <span style="width:8px;height:8px;border-radius:50%;background:${statusDot[r.status]||'#ccc'};display:inline-block;"></span>${r.status}
+            </span>
+          </div>
+          <div style="font-weight:700;color:#1d4ed8;">₱${Number(r.price||0).toLocaleString()}</div>
+        </div>
+        <p style="color:#64748b;font-size:.85rem;">${r.description||''}</p>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:.5rem;">
+        <button class="btn btn-outline btn-sm" onclick='openEdit(${JSON.stringify(r).replace(/'/g,"&#39;")})'>✏</button>
+        <button class="btn btn-danger btn-sm" onclick="deleteRide(${r.id})">🗑</button>
+      </div>
+    </div>
+  `).join('') || '<div class="empty"><div class="empty-icon">🎢</div><p>No rides yet.</p></div>';
+}
+
+function openModal() {
+  editId = null;
+  currentImg = '';
+  document.getElementById('modal-title').textContent = 'Add Ride';
+  ['f-name','f-desc','f-price'].forEach(id => document.getElementById(id).value = '');
+  // ... existing lines
+}
+
+function openEdit(r) {
+  editId = r.id;
+  currentImg = r.image_url || '';
+  document.getElementById('modal-title').textContent = 'Edit Ride';
+  document.getElementById('f-name').value = r.name || '';
+  document.getElementById('f-desc').value = r.description || '';
+  document.getElementById('f-price').value = r.price || '';
+  // ... existing field bindings
+}
+
+async function saveRide() {
+  const name = document.getElementById('f-name').value.trim();
+  if (!name) { alert('Name is required'); return; }
+
+  const data = {
+    name,
+    description: document.getElementById('f-desc').value,
+    category: document.getElementById('f-cat').value,
+    status: document.getElementById('f-status').value,
+    duration_minutes: Number(document.getElementById('f-dur').value) || null,
+    min_height_cm: Number(document.getElementById('f-height').value) || null,
+    max_capacity: Number(document.getElementById('f-cap').value) || null,
+    price: Number(document.getElementById('f-price').value) || 0,
+    image_url: currentImg,
+    is_featured: document.getElementById('f-feat').checked
+  };
+
+  document.getElementById('save-btn').textContent = 'Saving...';
+  if (editId) await http.put('/rides/' + editId, data);
+  else await http.post('/rides', data);
+  document.getElementById('save-btn').textContent = 'Save Ride';
+  closeModal();
+  load();
+}
+
+async function deleteRide(id) { if (!confirm('Delete this ride?')) return; await http.del('/rides/'+id); load(); }
+
+// handle image selection and convert to data URL for storage
+document.addEventListener('DOMContentLoaded', () => {
+  const fileInput = document.getElementById('f-img-file');
+  if (!fileInput) return;
+  fileInput.addEventListener('change', e => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = ev => {
+      currentImg = ev.target.result || '';
+    };
+    reader.readAsDataURL(file);
+  });
+});
+
+load();
+</script>
+</body>
+</html>

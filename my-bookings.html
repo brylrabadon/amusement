@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>My Bookings - AmusePark</title>
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+<nav>
+  <a class="logo" href="index.html">Amuse<span>Park</span></a>
+  <ul>
+    <li><a href="rides.html">Rides</a></li>
+    <li><a href="tickets.html">Buy Tickets</a></li>
+    <li><a href="my-bookings.html" class="active">My Bookings</a></li>
+    <li><a href="index.html" onclick="Auth.logout('login.html');return false;" style="color:#dc2626;font-weight:600;">Logout</a></li>
+
+  </ul>
+</nav>
+<div class="page-header"><h1>My Bookings</h1><p>View and manage your ticket bookings</p></div>
+<div class="container">
+  <div class="filter-row">
+    <input type="text" id="search" placeholder="🔍 Search by name, email, or reference..." oninput="render()" />
+  </div>
+  <div id="list"></div>
+</div>
+
+<!-- QR Modal -->
+<div class="modal-overlay" id="modal">
+  <div class="modal">
+    <div class="modal-header">
+      <h2>Entry QR Code</h2>
+      <button class="modal-close" onclick="closeModal()">✕</button>
+    </div>
+    <div id="modal-body"></div>
+  </div>
+</div>
+
+<script src="js/api.js"></script>
+<script>
+let bookings = [];
+const payColors = {Paid:'badge-green',Pending:'badge-yellow',Cancelled:'badge-red',Refunded:'badge-blue'};
+const statColors = {Active:'badge-green',Used:'badge-gray',Expired:'badge-red',Cancelled:'badge-red'};
+
+async function load() {
+  bookings = await http.get('/bookings');
+  render();
+}
+
+function render() {
+  const s = document.getElementById('search').value.toLowerCase();
+  const filtered = bookings.filter(b =>
+    b.booking_reference?.toLowerCase().includes(s) ||
+    b.customer_name?.toLowerCase().includes(s) ||
+    b.customer_email?.toLowerCase().includes(s)
+  );
+  const list = document.getElementById('list');
+  if (!filtered.length) { list.innerHTML = '<div class="empty"><div class="empty-icon">🎟</div><p>No bookings found.</p></div>'; return; }
+  list.innerHTML = filtered.map(b => `
+    <div class="card" style="padding:1.25rem;margin-bottom:1rem;">
+      <div style="display:flex;flex-wrap:wrap;justify-content:space-between;gap:1rem;align-items:center;">
+        <div>
+          <div style="display:flex;align-items:center;gap:.5rem;margin-bottom:.25rem;">
+            <strong style="color:#1d4ed8;font-size:1.1rem;">${b.booking_reference}</strong>
+            <span class="badge ${statColors[b.status]||'badge-gray'}">${b.status}</span>
+            <span class="badge ${payColors[b.payment_status]||'badge-gray'}">${b.payment_status}</span>
+          </div>
+          <div style="font-weight:600;">${b.customer_name}</div>
+          <div style="color:#64748b;font-size:.85rem;">${b.customer_email}</div>
+          <div style="color:#94a3b8;font-size:.8rem;margin-top:.35rem;">🎟 ${b.ticket_type_name} × ${b.quantity} &nbsp;|&nbsp; 📅 ${b.visit_date}</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:1rem;">
+          <div style="text-align:right;">
+            <div style="font-size:1.25rem;font-weight:900;">₱${Number(b.total_amount).toLocaleString()}</div>
+            <div style="font-size:.8rem;color:#94a3b8;">${b.payment_method}</div>
+          </div>
+          <button class="btn btn-outline btn-sm" onclick='showQR(${JSON.stringify(b).replace(/'/g,"&#39;")})'>📱 QR</button>
+        </div>
+      </div>
+    </div>
+  `).join('');
+}
+
+function showQR(b) {
+  document.getElementById('modal-body').innerHTML = `
+    <div style="text-align:center;">
+      <div style="color:#64748b;font-size:.9rem;">${b.booking_reference}</div>
+      <div style="font-weight:700;font-size:1.1rem;margin-bottom:1rem;">${b.customer_name}</div>
+      <img src="https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=${encodeURIComponent(b.qr_code_data||b.booking_reference)}"
+        style="border-radius:.75rem;border:4px solid #dbeafe;margin-bottom:1rem;" />
+      <div style="background:#f8fafc;border-radius:.75rem;padding:1rem;text-align:left;font-size:.9rem;">
+        <div style="display:flex;justify-content:space-between;padding:.35rem 0;"><span style="color:#64748b;">Ticket</span><span>${b.ticket_type_name} × ${b.quantity}</span></div>
+        <div style="display:flex;justify-content:space-between;padding:.35rem 0;"><span style="color:#64748b;">Visit Date</span><span>${b.visit_date}</span></div>
+        <div style="display:flex;justify-content:space-between;padding:.35rem 0;"><span style="color:#64748b;">Total</span><strong>₱${Number(b.total_amount).toLocaleString()}</strong></div>
+      </div>
+    </div>
+  `;
+  document.getElementById('modal').classList.add('show');
+}
+
+function closeModal() { document.getElementById('modal').classList.remove('show'); }
+
+load();
+</script>
+</body>
+</html>

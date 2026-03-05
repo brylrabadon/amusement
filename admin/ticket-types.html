@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Ticket Types - AmusePark</title>
+  <link rel="stylesheet" href="../css/style.css" />
+</head>
+<body>
+<nav class="admin-nav">
+  <a class="logo" href="../index.html">Amuse<span>Park</span></a>
+  <ul>
+    <li><a href="admin-dashboard.html">Dashboard</a></li>
+    <li><a href="rides.html">Rides</a></li>
+    <li><a href="bookings.html">Bookings</a></li>
+    <li><a href="ticket-types.html" class="active">Ticket Types</a></li>
+    <li><a href="index.html" onclick="Auth.logout('login.html');return false;" style="color:#dc2626;font-weight:600;">Logout</a></li>
+
+  </ul>
+</nav>
+<div class="page-header" style="display:flex;align-items:center;justify-content:space-between;padding:2rem 3rem;">
+  <div><h1 style="text-align:left;">Ticket & Pricing Settings</h1><p style="text-align:left;color:#bfdbfe;">Manage ticket types and prices</p></div>
+  <button class="btn btn-yellow" onclick="openModal()">+ Add Ticket Type</button>
+</div>
+<div class="container">
+  <div class="grid grid-2" id="types-grid"></div>
+</div>
+
+<div class="modal-overlay" id="modal">
+  <div class="modal">
+    <div class="modal-header"><h2 id="modal-title">Add Ticket Type</h2><button class="modal-close" onclick="closeModal()">✕</button></div>
+    <div class="form-group"><label>Name *</label><input id="f-name" /></div>
+    <div class="form-group"><label>Description</label><textarea id="f-desc" rows="2"></textarea></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;">
+      <div class="form-group"><label>Category</label>
+        <select id="f-cat"><option>Single Day</option><option>Season Pass</option><option>Group</option><option>VIP</option><option>Child</option><option>Senior</option></select>
+      </div>
+      <div class="form-group"><label>Price (₱) *</label><input id="f-price" type="number" /></div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;">
+      <div class="form-group"><label>Max Rides</label><input id="f-rides" type="number" placeholder="Unlimited" /></div>
+      <div style="display:flex;align-items:center;gap:.5rem;margin-top:1.75rem;"><input type="checkbox" id="f-active" checked /><label for="f-active" style="margin:0;">Active</label></div>
+    </div>
+    <div style="display:flex;gap:.75rem;margin-top:1rem;">
+      <button class="btn btn-outline" onclick="closeModal()" style="flex:1;">Cancel</button>
+      <button class="btn btn-primary" onclick="saveType()" style="flex:1;" id="save-btn">Save</button>
+    </div>
+  </div>
+</div>
+
+<script src="../js/api.js"></script>
+<script>
+let types = [], editId = null;
+
+async function load() { types = await http.get('/ticket-types'); render(); }
+
+function render() {
+  document.getElementById('types-grid').innerHTML = types.map(t => `
+    <div class="card" style="padding:1.25rem;border-left:4px solid ${t.is_active?'#1d4ed8':'#e2e8f0'};${!t.is_active?'opacity:.6':''};">
+      <div style="display:flex;justify-content:space-between;align-items:start;margin-bottom:.5rem;">
+        <div><strong style="font-size:1.1rem;">${t.name}</strong><div><span class="badge badge-blue" style="margin-top:.35rem;">${t.category}</span></div></div>
+        <div style="font-size:1.75rem;font-weight:900;color:#1d4ed8;">₱${Number(t.price).toLocaleString()}</div>
+      </div>
+      <p style="color:#64748b;font-size:.85rem;margin-bottom:.5rem;">${t.description||''}</p>
+      ${t.max_rides?`<p style="color:#7c3aed;font-size:.8rem;margin-bottom:.75rem;">Includes ${t.max_rides} rides</p>`:''}
+      <div style="display:flex;gap:.5rem;">
+        <button class="btn btn-outline btn-sm" onclick="toggleActive(${t.id},${t.is_active})">${t.is_active?'Deactivate':'Activate'}</button>
+        <button class="btn btn-outline btn-sm" onclick='openEdit(${JSON.stringify(t).replace(/'/g,"&#39;")})'>✏ Edit</button>
+        <button class="btn btn-danger btn-sm" onclick="deleteType(${t.id})">🗑</button>
+      </div>
+    </div>
+  `).join('') || '<div class="empty"><div class="empty-icon">🎟</div><p>No ticket types yet.</p></div>';
+}
+
+function openModal() { editId=null; document.getElementById('modal-title').textContent='Add Ticket Type'; ['f-name','f-desc','f-price','f-rides'].forEach(id=>document.getElementById(id).value=''); document.getElementById('f-cat').value='Single Day'; document.getElementById('f-active').checked=true; document.getElementById('modal').classList.add('show'); }
+function openEdit(t) { editId=t.id; document.getElementById('modal-title').textContent='Edit Ticket Type'; document.getElementById('f-name').value=t.name||''; document.getElementById('f-desc').value=t.description||''; document.getElementById('f-cat').value=t.category||'Single Day'; document.getElementById('f-price').value=t.price||''; document.getElementById('f-rides').value=t.max_rides||''; document.getElementById('f-active').checked=!!t.is_active; document.getElementById('modal').classList.add('show'); }
+function closeModal() { document.getElementById('modal').classList.remove('show'); }
+
+async function saveType() {
+  const name=document.getElementById('f-name').value.trim(), price=document.getElementById('f-price').value;
+  if(!name||!price){alert('Name and Price are required');return;}
+  const data={name,description:document.getElementById('f-desc').value,category:document.getElementById('f-cat').value,price:Number(price),max_rides:Number(document.getElementById('f-rides').value)||null,is_active:document.getElementById('f-active').checked};
+  document.getElementById('save-btn').textContent='Saving...';
+  if(editId) await http.put('/ticket-types/'+editId,data); else await http.post('/ticket-types',data);
+  closeModal(); load();
+}
+
+async function toggleActive(id,current) { await http.put('/ticket-types/'+id,{is_active:!current}); load(); }
+async function deleteType(id) { if(!confirm('Delete this ticket type?'))return; await http.del('/ticket-types/'+id); load(); }
+
+load();
+</script>
+</body>
+</html>
