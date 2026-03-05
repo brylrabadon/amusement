@@ -42,8 +42,8 @@ try {
     <h1>Ride the Fun.<br /><span>Book in Seconds.</span></h1>
     <p>Experience thrilling rides, family adventures, and unforgettable memories. Book online and skip the queue!</p>
     <div class="hero-btns">
-      <a href="tickets.php" class="btn btn-yellow" style="font-size:1.1rem;padding:.85rem 2rem;">🎟 View Tickets</a>
-      <a href="rides.php" class="btn btn-outline" style="font-size:1.1rem;padding:.85rem 2rem;border-color:#fff;color:#fff;">Explore Rides</a>
+      <a href="login.php" class="btn btn-yellow" style="font-size:1.1rem;padding:.85rem 2rem;">🎟 Book Tickets</a>
+      <a href="login.php" class="btn btn-outline" style="font-size:1.1rem;padding:.85rem 2rem;border-color:#fff;color:#fff;">Explore Rides</a>
     </div>
   </div>
 </section>
@@ -107,7 +107,7 @@ try {
 <section style="background:linear-gradient(135deg,#1a1a2e,#0f3460);padding:5rem 1.5rem;text-align:center;color:#fff;">
   <h2 style="font-size:2rem;font-weight:900;margin-bottom:1rem;">Ready for the Adventure?</h2>
   <p style="color:#bfdbfe;margin-bottom:2.5rem;font-size:1.1rem;">Book your tickets now and get your QR code instantly!</p>
-  <a href="tickets.php" class="btn btn-yellow" style="font-size:1.1rem;padding:.9rem 3rem;">🎟 View Ticket Types</a>
+  <a href="login.php" class="btn btn-yellow" style="font-size:1.1rem;padding:.9rem 3rem;">🎟 Get Your Tickets</a>
 </section>
 
 <?php if (count($maintenanceNames)): ?>

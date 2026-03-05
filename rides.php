@@ -3,8 +3,7 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/lib/auth.php';
 
-$user = current_user();
-$isCustomer = is_array($user) && (($user['role'] ?? '') === 'customer');
+$user = require_login('customer');
 $pdo = db();
 
 $q = trim((string)($_GET['q'] ?? ''));
@@ -45,19 +44,10 @@ $cats = ['All','Thrill','Family','Kids','Water','Classic'];
 <nav>
   <a class="logo" href="index.php">Amuse<span>Park</span></a>
   <ul>
-    <?php if (!$user): ?>
-      <li><a href="index.php">Home</a></li>
-      <li><a href="contact.php">Contact</a></li>
-      <li><a href="login.php" class="btn btn-yellow">Login</a></li>
-    <?php elseif (($user['role'] ?? '') === 'admin'): ?>
-      <li><a href="admin/admin-dashboard.php">Admin</a></li>
-      <li><a href="logout.php" style="color:#dc2626;font-weight:600;">Logout</a></li>
-    <?php else: ?>
-      <li><a href="rides.php" class="active">Rides</a></li>
-      <li><a href="tickets.php">Tickets</a></li>
-      <li><a href="my-bookings.php">My Bookings</a></li>
-      <li><a href="logout.php" style="color:#dc2626;font-weight:600;">Logout</a></li>
-    <?php endif; ?>
+    <li><a href="rides.php" class="active">Rides</a></li>
+    <li><a href="tickets.php">Tickets</a></li>
+    <li><a href="my-bookings.php">My Bookings</a></li>
+    <li><a href="logout.php" style="color:#dc2626;font-weight:600;">Logout</a></li>
   </ul>
 </nav>
 
@@ -114,7 +104,7 @@ $cats = ['All','Thrill','Family','Kids','Water','Classic'];
             </div>
             <div style="font-weight:700;color:#1d4ed8;">₱<?= number_format((float)($r['price'] ?? 0), 0) ?></div>
           </div>
-          <a href="<?= $isCustomer ? 'tickets.php' : 'login.php' ?>" class="btn btn-primary btn-full" <?= $status !== 'Open' ? 'style="opacity:.5;pointer-events:none;"' : '' ?>>
+          <a href="tickets.php" class="btn btn-primary btn-full" <?= $status !== 'Open' ? 'style="opacity:.5;pointer-events:none;"' : '' ?>>
             <?= $status === 'Open' ? 'Book Now' : e($status) ?>
           </a>
         </div>

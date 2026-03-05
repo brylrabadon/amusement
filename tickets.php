@@ -3,10 +3,7 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/lib/auth.php';
 
-$sessionUser = current_user();
-if ($sessionUser && (($sessionUser['role'] ?? '') === 'admin')) {
-    redirect('admin/admin-dashboard.php');
-}
+$user = require_login('customer');
 $pdo = db();
 
 function booking_ref(): string
@@ -32,85 +29,6 @@ if ($step < 0 || $step > 3) $step = 0;
 
 // Load active ticket types
 $types = $pdo->query("SELECT * FROM ticket_types WHERE is_active = 1 ORDER BY price ASC")->fetchAll();
-
-// Public (not logged in): allow viewing ticket types, but require login to book.
-if (!$sessionUser) {
-    $flash = flash_get();
-    ?>
-    <!DOCTYPE html>
-    <html lang="en">
-    <head>
-      <meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" />
-      <title>Tickets - AmusePark</title>
-      <link rel="stylesheet" href="css/style.css" />
-    </head>
-    <body>
-    <nav>
-      <a class="logo" href="index.php">Amuse<span>Park</span></a>
-      <ul>
-        <li><a href="index.php">Home</a></li>
-        <li><a href="contact.php">Contact</a></li>
-        <li><a href="login.php" class="btn btn-yellow">Login</a></li>
-      </ul>
-    </nav>
-
-    <div class="page-header">
-      <h1>Ticket Types</h1>
-      <p>Browse tickets. Log in to book.</p>
-    </div>
-
-    <div class="container">
-      <?php if ($flash && ($flash['message'] ?? '') !== ''): ?>
-        <div class="card" style="padding:1rem;margin-bottom:1rem;border-left:4px solid <?= ($flash['type'] ?? '') === 'error' ? '#dc2626' : '#16a34a' ?>;">
-          <strong><?= e(($flash['type'] ?? '') === 'error' ? 'Error' : 'Success') ?>:</strong>
-          <?= e($flash['message']) ?>
-        </div>
-      <?php endif; ?>
-
-      <div class="card" style="padding:1.25rem;margin-bottom:1.25rem;background:#eff6ff;">
-        <strong>Want to book?</strong>
-        <div style="color:#64748b;margin-top:.25rem;">Please log in first to continue with booking.</div>
-        <div style="margin-top:.75rem;">
-          <a class="btn btn-primary" href="login.php">Login to Book</a>
-          <a class="btn btn-outline" href="register.php" style="margin-left:.5rem;">Create Account</a>
-        </div>
-      </div>
-
-      <div class="grid grid-2">
-        <?php if (!count($types)): ?>
-          <div class="empty" style="grid-column:1/-1;"><div class="empty-icon">🎟</div><p>No tickets available.</p></div>
-        <?php endif; ?>
-        <?php foreach ($types as $t): ?>
-          <div class="card" style="padding:1.25rem;">
-            <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:1rem;">
-              <div>
-                <strong style="font-size:1.1rem;"><?= e($t['name'] ?? '') ?></strong>
-                <div style="margin-top:.35rem;"><span class="badge badge-blue"><?= e($t['category'] ?? '') ?></span></div>
-                <p style="color:#64748b;font-size:.9rem;margin-top:.65rem;"><?= e($t['description'] ?? '') ?></p>
-                <?php if (!empty($t['max_rides'])): ?>
-                  <div style="color:#7c3aed;font-size:.85rem;margin-top:.35rem;">Includes <?= (int)$t['max_rides'] ?> rides</div>
-                <?php endif; ?>
-              </div>
-              <div style="text-align:right;flex-shrink:0;">
-                <div style="font-size:1.75rem;font-weight:900;color:#1d4ed8;">₱<?= number_format((float)($t['price'] ?? 0), 0) ?></div>
-                <div style="font-size:.8rem;color:#94a3b8;">per person</div>
-              </div>
-            </div>
-            <div style="margin-top:1rem;">
-              <a class="btn btn-primary btn-full" href="login.php">Login to Book</a>
-            </div>
-          </div>
-        <?php endforeach; ?>
-      </div>
-    </div>
-    </body>
-    </html>
-    <?php
-    exit;
-}
-
-// Logged in: only customers can book.
-$user = require_login('customer');
 
 // Handle posts
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
