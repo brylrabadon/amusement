@@ -1,0 +1,11 @@
+<?php
+declare(strict_types=1);
+
+// Local overrides (do not commit real passwords).
+// Copy this file to `config.local.php` and adjust values.
+
+define('DB_HOST', 'localhost');
+define('DB_NAME', 'amusepark');
+define('DB_USER', 'root');
+define('DB_PASS', ''); // your MySQL password (blank for default XAMPP)
+

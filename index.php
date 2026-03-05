@@ -1,22 +1,37 @@
+<?php
+declare(strict_types=1);
+
+require_once __DIR__ . '/lib/auth.php';
+
+$user = current_user();
+
+$maintenanceNames = [];
+try {
+    $pdo = db();
+    $rows = $pdo->query("SELECT name FROM rides WHERE status = 'Maintenance' ORDER BY created_at DESC")->fetchAll();
+    foreach ($rows as $r) {
+        if (!empty($r['name'])) $maintenanceNames[] = (string)$r['name'];
+    }
+} catch (Throwable $e) {
+    // Keep landing page usable even if DB/tables aren't ready yet.
+}
+?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>AmusePark - Ride the Fun</title>
-  <link rel="stylesheet" href="../css/style.css" />
+  <link rel="stylesheet" href="css/style.css" />
 </head>
 <body>
 
 <nav>
-  <a class="logo" href="index.html">Amuse<span>Park</span></a>
+  <a class="logo" href="index.php">Amuse<span>Park</span></a>
   <ul>
-    <li><a href="index.html" class="active">Home</a></li>
-    <li><a href="rides.html">Rides</a></li>
-    <li><a href="tickets.html">Buy Tickets</a></li>
-    <li><a href="my-bookings.html">My Bookings</a></li>
-    <li><a href="contact.html">Contact</a></li>
-    <li><a href="../login.html" class="btn btn-yellow">Login</a></li>
+    <li><a href="index.php" class="active">Home</a></li>
+    <li><a href="contact.php">Contact</a></li>
+    <li><a href="login.php" class="btn btn-yellow">Login</a></li>
   </ul>
 </nav>
 
@@ -27,10 +42,8 @@
     <h1>Ride the Fun.<br /><span>Book in Seconds.</span></h1>
     <p>Experience thrilling rides, family adventures, and unforgettable memories. Book online and skip the queue!</p>
     <div class="hero-btns">
-      <a href="tickets.html" class="btn btn-yellow" style="font-size:1.1rem;padding:.85rem 2rem;"
-         onclick="return goProtected('tickets.html')">🎟 Book Tickets Now</a>
-      <a href="rides.html" class="btn btn-outline" style="font-size:1.1rem;padding:.85rem 2rem;border-color:#fff;color:#fff;"
-         onclick="return goProtected('rides.html')">Explore Rides</a>
+      <a href="tickets.php" class="btn btn-yellow" style="font-size:1.1rem;padding:.85rem 2rem;">🎟 View Tickets</a>
+      <a href="rides.php" class="btn btn-outline" style="font-size:1.1rem;padding:.85rem 2rem;border-color:#fff;color:#fff;">Explore Rides</a>
     </div>
   </div>
 </section>
@@ -86,8 +99,7 @@
   </div>
   <div class="about-img">
     <img src="AmusementPark_1.jpg" alt="Park" />
-    <div class="about-badge">
-    </div>
+    <div class="about-badge"></div>
   </div>
 </div>
 
@@ -95,33 +107,23 @@
 <section style="background:linear-gradient(135deg,#1a1a2e,#0f3460);padding:5rem 1.5rem;text-align:center;color:#fff;">
   <h2 style="font-size:2rem;font-weight:900;margin-bottom:1rem;">Ready for the Adventure?</h2>
   <p style="color:#bfdbfe;margin-bottom:2.5rem;font-size:1.1rem;">Book your tickets now and get your QR code instantly!</p>
-  <a href="tickets.html" class="btn btn-yellow" style="font-size:1.1rem;padding:.9rem 3rem;"
-     onclick="return goProtected('tickets.html')">🎟 Get Your Tickets</a>
+  <a href="tickets.php" class="btn btn-yellow" style="font-size:1.1rem;padding:.9rem 3rem;">🎟 View Ticket Types</a>
 </section>
+
+<?php if (count($maintenanceNames)): ?>
+  <section id="park-status" style="background:#fee2e2;padding:1rem 1.5rem;">
+    <div style="max-width:900px;margin:0 auto;font-size:.9rem;color:#b91c1c;">
+      <strong>Service Updates:</strong>
+      <?= e(implode(', ', $maintenanceNames)) ?> are currently under maintenance (Temporarily Closed).
+    </div>
+  </section>
+<?php endif; ?>
 
 <footer style="background:#111827;color:#94a3b8;padding:2rem;text-align:center;">
   <p style="font-size:1.2rem;font-weight:900;color:#fff;margin-bottom:.5rem;">Amuse<span style="color:#facc15;">Park</span></p>
   <p>© 2026 AmusePark. All rights reserved.</p>
 </footer>
 
-<script src="../js/auth.js"></script>
-<script>
-  function goProtected(target) {
-    try {
-      const user = (typeof Auth !== 'undefined' && Auth.currentUser) ? Auth.currentUser() : null;
-      if (!user || user.role !== 'customer') {
-        // Require customer login before accessing ticketing and rides
-        window.location.href = '../login.html';
-        return false;
-      }
-      window.location.href = target;
-      return false;
-    } catch (e) {
-      window.location.href = '../login.html';
-      return false;
-    }
-  }
-</script>
-
 </body>
 </html>
+

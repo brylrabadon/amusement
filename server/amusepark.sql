@@ -24,6 +24,7 @@ CREATE TABLE rides (
   duration_minutes INT,
   min_height_cm INT,
   max_capacity INT,
+  price DECIMAL(10,2) NOT NULL DEFAULT 0,
   image_url LONGTEXT,
   is_featured TINYINT(1) DEFAULT 0,
   created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
