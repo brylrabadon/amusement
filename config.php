@@ -72,21 +72,27 @@ function app_base_url(): string
     static $base = null;
     if (is_string($base)) return $base;
 
-    $docRoot = realpath((string)($_SERVER['DOCUMENT_ROOT'] ?? '')) ?: '';
-    $appRoot = realpath(__DIR__) ?: __DIR__;
+    $docRoot = str_replace('\\', '/', realpath((string)($_SERVER['DOCUMENT_ROOT'] ?? '')) ?: '');
+    $appRoot = str_replace('\\', '/', realpath(__DIR__) ?: __DIR__);
 
-    if ($docRoot !== '' && str_starts_with(strtolower($appRoot), strtolower($docRoot))) {
+    if ($docRoot !== '' && stripos($appRoot, $docRoot) === 0) {
         $rel = substr($appRoot, strlen($docRoot));
-        $rel = str_replace('\\', '/', $rel);
-        $rel = trim($rel, '/');
+        $rel = trim(str_replace('\\', '/', $rel), '/');
         $base = $rel === '' ? '/' : '/' . $rel . '/';
         return $base;
     }
 
-    // Fallback: best-effort from current script directory
-    $scriptDir = str_replace('\\', '/', (string)dirname((string)($_SERVER['SCRIPT_NAME'] ?? '/')));
-    $scriptDir = $scriptDir === '/' ? '/' : rtrim($scriptDir, '/') . '/';
-    $base = $scriptDir;
+    // Hard fallback — derive from SCRIPT_NAME by stripping everything after the app folder
+    $script = str_replace('\\', '/', (string)($_SERVER['SCRIPT_NAME'] ?? '/'));
+    // App folder name is the directory name of __DIR__
+    $appFolder = basename($appRoot); // e.g. 'amusement'
+    $pos = stripos($script, '/' . $appFolder . '/');
+    if ($pos !== false) {
+        $base = substr($script, 0, $pos + strlen('/' . $appFolder . '/'));
+        return $base;
+    }
+
+    $base = '/';
     return $base;
 }
 

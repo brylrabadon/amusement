@@ -155,6 +155,7 @@ $formAction = $rideToEdit ? 'update' : 'create';
     <li><a href="rides.php" class="active">Rides</a></li>
     <li><a href="bookings.php">Bookings</a></li>
     <li><a href="ticket-types.php">Ticket Types</a></li>
+    <li><a href="scanner.php">Scanner</a></li>
      <li><a href="../profile.php">Profile</a></li>
     <li><a href="../logout.php" style="color:#dc2626;font-weight:600;">Logout</a></li>
   </ul>

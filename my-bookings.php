@@ -1,16 +1,26 @@
 <?php
 declare(strict_types=1);
-
 require_once __DIR__ . '/lib/auth.php';
+require_once __DIR__ . '/lib/layout.php';
 
-$user = require_login('customer');
-$pdo = db();
+$user = require_login();
+$pdo  = db();
 
 $st = $pdo->prepare('SELECT * FROM bookings WHERE user_id = ? ORDER BY created_at DESC');
 $st->execute([(int)$user['id']]);
 $bookings = $st->fetchAll();
-$flash = flash_get();
-$payColors = ['Paid' => 'badge-green', 'Pending' => 'badge-yellow', 'Cancelled' => 'badge-red', 'Refunded' => 'badge-blue'];
+
+$ticketCounts = [];
+try {
+    $tcst = $pdo->prepare('SELECT booking_id, COUNT(*) as cnt FROM tickets WHERE booking_id IN (SELECT id FROM bookings WHERE user_id = ?) GROUP BY booking_id');
+    $tcst->execute([(int)$user['id']]);
+    foreach ($tcst->fetchAll() as $row) {
+        $ticketCounts[(int)$row['booking_id']] = (int)$row['cnt'];
+    }
+} catch (\Throwable $e) {}
+
+$flash    = flash_get();
+$payBadge = ['Paid'=>'badge-green','Pending'=>'badge-yellow','Cancelled'=>'badge-red','Refunded'=>'badge-blue'];
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -18,57 +28,68 @@ $payColors = ['Paid' => 'badge-green', 'Pending' => 'badge-yellow', 'Cancelled' 
   <meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>My Bookings - AmusePark</title>
   <link rel="stylesheet" href="css/style.css" />
+  <style>
+    body { background: #f9fafb; }
+    .booking-ref { font-weight: 800; font-size: 1.05rem; color: #7c3aed; }
+    .booking-card { padding: 1.5rem; transition: box-shadow .2s; }
+    .booking-card:hover { box-shadow: 0 6px 24px rgba(124,58,237,.1); }
+  </style>
 </head>
 <body>
-<nav>
-  <a class="logo" href="index.php">Amuse<span>Park</span></a>
-  <ul>
-    <li><a href="rides.php">Rides</a></li>
-    <li><a href="tickets.php">Buy Tickets</a></li>
-    <li><a href="my-bookings.php" class="active">My Bookings</a></li>
-     <li><a href="profile.php">Profile</a></li>
-    <li><a href="logout.php" style="color:#dc2626;font-weight:600;">Logout</a></li>
-  </ul>
-</nav>
+<?php render_nav($user, 'bookings'); ?>
+<?php render_page_header('My Bookings', 'Your ticket bookings and QR codes'); ?>
 
-<div class="page-header">
-  <h1>My Bookings</h1>
-  <p>Your ticket bookings and QR codes</p>
-</div>
-
-<div class="container" style="max-width:800px;">
+<div class="container" style="max-width:820px;">
   <?php if ($flash && ($flash['message'] ?? '') !== ''): ?>
-    <div class="card" style="padding:1rem;margin-bottom:1rem;border-left:4px solid <?= ($flash['type'] ?? '') === 'error' ? '#dc2626' : '#16a34a' ?>;">
-      <strong><?= e(($flash['type'] ?? '') === 'error' ? 'Error' : 'Success') ?>:</strong>
+    <div style="padding:1rem 1.25rem;border-radius:.75rem;margin-bottom:1.25rem;font-weight:600;
+      background:<?= ($flash['type']??'')!=='error'?'#dcfce7':'#fee2e2' ?>;
+      border:1px solid <?= ($flash['type']??'')!=='error'?'#86efac':'#fca5a5' ?>;
+      color:<?= ($flash['type']??'')!=='error'?'#166534':'#991b1b' ?>;">
       <?= e($flash['message']) ?>
     </div>
   <?php endif; ?>
 
   <div style="margin-bottom:1.5rem;">
-    <a class="btn btn-primary" href="tickets.php">Buy Tickets</a>
+    <a class="btn btn-primary" href="tickets.php">+ Buy New Tickets</a>
   </div>
 
   <?php if (!count($bookings)): ?>
     <div class="empty">
       <div class="empty-icon">🎟</div>
       <p>You have no bookings yet.</p>
-      <a class="btn btn-primary" href="tickets.php" style="margin-top:1rem;">Buy Tickets</a>
+      <a class="btn btn-primary" href="tickets.php" style="margin-top:1rem;display:inline-block;">Buy Tickets</a>
     </div>
   <?php else: ?>
-    <div class="grid" style="display:grid;gap:1rem;">
-      <?php foreach ($bookings as $b): ?>
-        <?php $pay = (string)($b['payment_status'] ?? 'Pending'); ?>
-        <div class="card" style="padding:1.25rem;">
+    <div style="display:grid;gap:1rem;">
+      <?php foreach ($bookings as $b):
+        $pay = (string)($b['payment_status'] ?? 'Pending');
+        $tc  = $ticketCounts[(int)$b['id']] ?? 0;
+      ?>
+        <div class="card booking-card">
           <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:1rem;">
             <div>
-              <div style="font-weight:800;font-size:1.1rem;color:#1d4ed8;"><?= e($b['booking_reference'] ?? '') ?></div>
-              <div style="color:#64748b;font-size:.9rem;margin-top:.25rem;"><?= e($b['ticket_type_name'] ?? '') ?> × <?= (int)($b['quantity'] ?? 1) ?></div>
-              <div style="margin-top:.5rem;">Visit: <?= e((string)($b['visit_date'] ?? '')) ?></div>
-              <span class="badge <?= e($payColors[$pay] ?? 'badge-gray') ?>" style="margin-top:.5rem;"><?= e($pay) ?></span>
+              <div class="booking-ref"><?= e($b['booking_reference'] ?? '') ?></div>
+              <div style="color:#6b7280;font-size:.9rem;margin-top:.2rem;">
+                <?= e($b['ticket_type_name'] ?? '') ?> × <?= (int)($b['quantity'] ?? 1) ?>
+              </div>
+              <div style="font-size:.88rem;color:#374151;margin-top:.4rem;">
+                📅 Visit: <strong><?= e((string)($b['visit_date'] ?? '')) ?></strong>
+              </div>
+              <?php if ($tc > 0): ?>
+                <div style="font-size:.8rem;color:#7c3aed;margin-top:.3rem;">
+                  🎫 <?= $tc ?> ticket<?= $tc !== 1 ? 's' : '' ?> generated
+                </div>
+              <?php endif; ?>
+              <div style="margin-top:.6rem;">
+                <span class="badge <?= e($payBadge[$pay] ?? 'badge-gray') ?>"><?= e($pay) ?></span>
+              </div>
             </div>
-            <div style="text-align:right;">
-              <div style="font-size:1.25rem;font-weight:900;">₱<?= number_format((float)($b['total_amount'] ?? 0), 0) ?></div>
-              <a class="btn btn-outline btn-sm" href="booking-qr.php?id=<?= (int)$b['id'] ?>" style="margin-top:.5rem;display:inline-block;">View QR</a>
+            <div style="text-align:right;flex-shrink:0;">
+              <div style="font-size:1.4rem;font-weight:900;color:#111827;">
+                ₱<?= number_format((float)($b['total_amount'] ?? 0), 0) ?>
+              </div>
+              <a class="btn btn-outline btn-sm" href="booking-qr.php?id=<?= (int)$b['id'] ?>"
+                 style="margin-top:.6rem;display:inline-block;">View QR</a>
             </div>
           </div>
         </div>
@@ -76,5 +97,7 @@ $payColors = ['Paid' => 'badge-green', 'Pending' => 'badge-yellow', 'Cancelled' 
     </div>
   <?php endif; ?>
 </div>
+
+<?php render_footer(); ?>
 </body>
 </html>
