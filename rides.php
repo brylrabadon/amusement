@@ -45,8 +45,9 @@ $cats = ['All','Thrill','Family','Kids','Water','Classic'];
   <a class="logo" href="index.php">Amuse<span>Park</span></a>
   <ul>
     <li><a href="rides.php" class="active">Rides</a></li>
-    <li><a href="tickets.php">Tickets</a></li>
+    <li><a href="tickets.php">Buy Tickets</a></li>
     <li><a href="my-bookings.php">My Bookings</a></li>
+     <li><a href="profile.php">Profile</a></li>
     <li><a href="logout.php" style="color:#dc2626;font-weight:600;">Logout</a></li>
   </ul>
 </nav>
@@ -105,7 +106,7 @@ $cats = ['All','Thrill','Family','Kids','Water','Classic'];
             <div style="font-weight:700;color:#1d4ed8;">₱<?= number_format((float)($r['price'] ?? 0), 0) ?></div>
           </div>
           <a href="tickets.php" class="btn btn-primary btn-full" <?= $status !== 'Open' ? 'style="opacity:.5;pointer-events:none;"' : '' ?>>
-            <?= $status === 'Open' ? 'Book Now' : e($status) ?>
+            <?= $status === 'Open' ? 'Buy Tickets' : e($status) ?>
           </a>
         </div>
       </div>

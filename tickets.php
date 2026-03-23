@@ -182,6 +182,7 @@ if ($step >= 2) {
     <li><a href="rides.php">Rides</a></li>
     <li><a href="tickets.php" class="active">Buy Tickets</a></li>
     <li><a href="my-bookings.php">My Bookings</a></li>
+    <li><a href="profile.php">Profile</a></li>
     <li><a href="logout.php" style="color:#dc2626;font-weight:600;">Logout</a></li>
   </ul>
 </nav>
@@ -214,11 +215,14 @@ if ($step >= 2) {
     <?php if (!count($types)): ?>
       <p style="color:#94a3b8;text-align:center;padding:2rem;">No tickets available.</p>
     <?php else: ?>
-      <form method="post">
+      <form method="post" id="ticket-form">
         <input type="hidden" name="action" value="select" />
         <div style="display:grid;gap:1rem;margin-bottom:1.5rem;">
-          <?php foreach ($types as $t): ?>
-            <label class="card" style="padding:1.25rem;display:flex;justify-content:space-between;gap:1rem;align-items:center;cursor:pointer;border:2px solid <?= (int)$t['id'] === $selectedId ? '#1d4ed8' : 'transparent' ?>;">
+          <?php foreach ($types as $t):
+            $price = (float)$t['price'];
+            $tid = (int)$t['id'];
+          ?>
+            <label class="card ticket-option" style="padding:1.25rem;display:flex;justify-content:space-between;gap:1rem;align-items:center;cursor:pointer;border:2px solid <?= $tid === $selectedId ? '#1d4ed8' : '#e2e8f0' ?>;">
               <div>
                 <div style="display:flex;align-items:center;gap:.5rem;margin-bottom:.25rem;">
                   <strong style="font-size:1.1rem;"><?= e($t['name']) ?></strong>
@@ -227,14 +231,16 @@ if ($step >= 2) {
                 <p style="color:#64748b;font-size:.9rem;"><?= e($t['description'] ?? '') ?></p>
                 <?php if (!empty($t['max_rides'])): ?>
                   <p style="color:#7c3aed;font-size:.8rem;margin-top:.25rem;">Includes <?= (int)$t['max_rides'] ?> rides</p>
+                <?php else: ?>
+                  <p style="color:#7c3aed;font-size:.8rem;margin-top:.25rem;">Unlimited rides</p>
                 <?php endif; ?>
               </div>
               <div style="text-align:right;flex-shrink:0;">
-                <div style="font-size:1.5rem;font-weight:900;color:#1d4ed8;">₱<?= number_format((float)$t['price'], 0) ?></div>
+                <div style="font-size:1.5rem;font-weight:900;color:#1d4ed8;">₱<?= number_format($price, 0) ?></div>
                 <div style="font-size:.8rem;color:#94a3b8;margin-top:.25rem;">per person</div>
               </div>
               <div style="margin-left:1rem;">
-                <input type="radio" name="ticket_type_id" value="<?= (int)$t['id'] ?>" <?= (int)$t['id'] === $selectedId ? 'checked' : '' ?> />
+                <input type="radio" name="ticket_type_id" value="<?= $tid ?>" data-price="<?= (float)$price ?>" <?= $tid === $selectedId ? 'checked' : '' ?> />
               </div>
             </label>
           <?php endforeach; ?>
@@ -242,19 +248,41 @@ if ($step >= 2) {
 
         <div class="card" style="padding:1.25rem;margin-bottom:1.5rem;">
           <label>Quantity</label>
-          <div class="qty-row" style="margin-top:.75rem;display:flex;align-items:center;gap:.75rem;">
-            <input type="number" name="quantity" min="1" value="<?= max(1, $selectedQty) ?>" style="width:120px;" />
-            <?php if ($selectedType): ?>
-              <div style="margin-left:auto;text-align:right;">
-                <div style="font-size:.85rem;color:#64748b;">Total</div>
-                <div style="font-size:1.75rem;font-weight:900;color:#1d4ed8;">₱<?= number_format(((float)$selectedType['price']) * max(1, $selectedQty), 0) ?></div>
-              </div>
-            <?php endif; ?>
+          <div class="qty-row ticket-total-row" style="margin-top:.75rem;display:flex;align-items:center;gap:.75rem;">
+            <input type="number" name="quantity" id="ticket-qty" min="1" value="<?= max(1, $selectedQty) ?>" style="width:120px;" />
+            <div id="ticket-total-wrap" style="margin-left:auto;text-align:right;">
+              <div style="font-size:.85rem;color:#64748b;">Total</div>
+              <div id="ticket-total-amount" style="font-size:1.75rem;font-weight:900;color:#1d4ed8;">₱<?= $selectedType ? number_format(((float)$selectedType['price']) * max(1, $selectedQty), 0) : '0' ?></div>
+            </div>
           </div>
         </div>
 
         <button class="btn btn-primary btn-full" type="submit" style="font-size:1rem;padding:.85rem;">Continue →</button>
       </form>
+      <script>
+      (function() {
+        var form = document.getElementById('ticket-form');
+        if (!form) return;
+        var totalEl = document.getElementById('ticket-total-amount');
+        var qtyInput = document.getElementById('ticket-qty');
+        function formatNum(n) { return '₱' + Math.round(n).toLocaleString(); }
+        function updateTotal() {
+          var radio = form.querySelector('input[name="ticket_type_id"]:checked');
+          var qty = parseInt(qtyInput.value, 10) || 1;
+          qty = Math.max(1, qty);
+          qtyInput.value = qty;
+          if (!radio || !totalEl) return;
+          var price = parseFloat(radio.getAttribute('data-price')) || 0;
+          totalEl.textContent = formatNum(price * qty);
+        }
+        form.querySelectorAll('input[name="ticket_type_id"]').forEach(function(r) {
+          r.addEventListener('change', updateTotal);
+        });
+        if (qtyInput) qtyInput.addEventListener('input', updateTotal);
+        if (qtyInput) qtyInput.addEventListener('change', updateTotal);
+        updateTotal();
+      })();
+      </script>
     <?php endif; ?>
   <?php endif; ?>
 
@@ -341,4 +369,3 @@ if ($step >= 2) {
 </div>
 </body>
 </html>
-

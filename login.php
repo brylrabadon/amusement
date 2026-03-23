@@ -32,6 +32,34 @@ $flash = flash_get();
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Login - AmusePark</title>
   <link rel="stylesheet" href="css/style.css" />
+  <style>
+    /* Custom overrides to remove blue overlay and fix background */
+    .auth-left {
+        position: relative;
+        background-color: #000; /* Fallback */
+        overflow: hidden;
+    }
+
+    .auth-left img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        display: block;
+    }
+
+    .auth-left-overlay {
+        /* REMOVED BLUE TINT: Using a neutral dark gradient only at the bottom for text readability */
+        background: linear-gradient(to top, rgba(0,0,0,0.8) 0%, rgba(0,0,0,0) 50%) !important;
+        display: flex;
+        flex-direction: column;
+        justify-content: flex-end;
+        padding: 3rem !important;
+    }
+
+    .auth-left-overlay h2, .auth-left-overlay p {
+        text-shadow: 2px 2px 10px rgba(0,0,0,0.5);
+    }
+  </style>
 </head>
 <body>
 
@@ -46,13 +74,14 @@ $flash = flash_get();
 
 <div class="auth-page">
   <div class="auth-left">
-    <img src="https://images.unsplash.com/photo-1563656157432-67560011e209?w=800&q=80" alt="AmusePark" />
+    <img src="https://images.unsplash.com/photo-1513889961551-628c1e5e2ee9?q=80&w=2070" alt="AmusePark Adventure" />
+    
     <div class="auth-left-overlay">
-      <div class="hero-tag" style="margin-bottom:1.5rem;">⭐ Philippines' #1 Amusement Park</div>
-      <h2 style="font-size:2.5rem;font-weight:900;line-height:1.2;margin-bottom:1rem;">
-        LOOKING FOR<br/>ADVENTURE?
+      <div class="hero-tag" style="margin-bottom:1.5rem; background: #fbbf24; color: #000; padding: 0.4rem 1rem; border-radius: 2rem; display: inline-block; width: fit-content; font-weight: 700; font-size: 0.8rem;">⭐ Philippines' #1 Amusement Park</div>
+      <h2 style="font-size:3rem; font-weight:900; line-height:1.1; margin-bottom:1rem; color: #fff;">
+        READY FOR THE<br/>THRILL?
       </h2>
-      <p style="color:rgba(255,255,255,.8);font-size:1rem;">Ride. Laugh. Scream. Repeat.</p>
+      <p style="color:rgba(255,255,255,0.9); font-size:1.1rem; margin-bottom: 2rem;">Experience the magic of AmusePark.</p>
     </div>
   </div>
 
@@ -65,36 +94,27 @@ $flash = flash_get();
       </div>
 
       <?php if ($flash && ($flash['type'] ?? '') === 'success'): ?>
-        <div class="auth-alert auth-alert-success" style="display:block;">
+        <div class="auth-alert auth-alert-success" style="display:block; background: #dcfce7; color: #166534; padding: 1rem; border-radius: 0.5rem; margin-bottom: 1rem;">
           <?= e($flash['message'] ?? '') ?>
-          <?php if (!empty($flash['action']) && is_array($flash['action'])): ?>
-            <?php $href = (string)($flash['action']['href'] ?? ''); ?>
-            <?php $label = (string)($flash['action']['label'] ?? ''); ?>
-            <?php if ($href !== '' && $label !== ''): ?>
-              <div style="margin-top:.5rem;">
-                <a href="<?= e($href) ?>" style="color:#166534;font-weight:800;text-decoration:underline;"><?= e($label) ?></a>
-              </div>
-            <?php endif; ?>
-          <?php endif; ?>
         </div>
       <?php endif; ?>
-      <?php if ($flash && ($flash['type'] ?? '') === 'error'): ?>
-        <div class="auth-alert auth-alert-error" style="display:block;"><?= e($flash['message'] ?? '') ?></div>
-      <?php endif; ?>
-      <?php if ($error): ?>
-        <div class="auth-alert auth-alert-error" style="display:block;"><?= e($error) ?></div>
+
+      <?php if ($error || ($flash && ($flash['type'] ?? '') === 'error')): ?>
+        <div class="auth-alert auth-alert-error" style="display:block; background: #fee2e2; color: #991b1b; padding: 1rem; border-radius: 0.5rem; margin-bottom: 1rem;">
+          <?= e($error ?: $flash['message']) ?>
+        </div>
       <?php endif; ?>
 
       <form method="post">
-        <div class="form-group">
-          <label>Email Address</label>
-          <input type="email" name="email" placeholder="xxxx@email.com" required />
+        <div class="form-group" style="margin-bottom: 1.25rem;">
+          <label style="display:block; margin-bottom: 0.5rem; font-weight: 600; color: #475569;">Email Address</label>
+          <input type="email" name="email" placeholder="xxxx@email.com" required style="width:100%; padding: 0.75rem; border: 1px solid #e2e8f0; border-radius: 0.5rem;" />
         </div>
-        <div class="form-group">
-          <label>Password</label>
-          <input type="password" name="password" placeholder="Enter your password" required />
+        <div class="form-group" style="margin-bottom: 1.5rem;">
+          <label style="display:block; margin-bottom: 0.5rem; font-weight: 600; color: #475569;">Password</label>
+          <input type="password" name="password" placeholder="Enter your password" required style="width:100%; padding: 0.75rem; border: 1px solid #e2e8f0; border-radius: 0.5rem;" />
         </div>
-        <button type="submit" class="btn btn-primary btn-full" style="font-size:1rem;padding:.85rem;">
+        <button type="submit" class="btn btn-primary btn-full" style="font-size:1rem; padding:.85rem; width: 100%; background: #1d4ed8; color: #fff; border: none; border-radius: 0.5rem; cursor: pointer; font-weight: 700;">
           Log In
         </button>
       </form>
@@ -107,4 +127,3 @@ $flash = flash_get();
 </div>
 </body>
 </html>
-

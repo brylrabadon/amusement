@@ -66,6 +66,7 @@ $payColors = ['Paid' => 'badge-green', 'Pending' => 'badge-yellow', 'Cancelled' 
     <li><a href="rides.php">Rides</a></li>
     <li><a href="bookings.php" class="active">Bookings</a></li>
     <li><a href="ticket-types.php">Ticket Types</a></li>
+     <li><a href="../profile.php">Profile</a></li>
     <li><a href="../logout.php" style="color:#dc2626;font-weight:600;">Logout</a></li>
   </ul>
 </nav>

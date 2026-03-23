@@ -25,7 +25,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $pw
     );
     if (($result['success'] ?? false) === true) {
-        flash_set('success', 'Login successfully, Login now', ['href' => 'login.php', 'label' => 'Login now']);
+        flash_set('success', 'Registration successful! You can now log in.', ['href' => 'login.php', 'label' => 'Login now']);
         redirect('register.php');
     } else {
         $error = $result['message'] ?? 'Registration failed.';
@@ -42,6 +42,39 @@ $flash = flash_get();
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Create Account - AmusePark</title>
   <link rel="stylesheet" href="css/style.css" />
+  <style>
+    /* Custom overrides to remove blue tint and update background */
+    .auth-left {
+      background-image: url('https://images.unsplash.com/photo-1513889961551-628c1e5e2ee9?q=80&w=2070');
+      background-size: cover;
+      background-position: center;
+      position: relative;
+    }
+
+    /* Removing the blue and using a subtle dark gradient for text contrast */
+    .auth-left-overlay {
+      background: linear-gradient(to bottom, rgba(0,0,0,0.1) 0%, rgba(0,0,0,0.6) 100%) !important;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      padding: 3rem;
+      height: 100%;
+    }
+
+    .hero-tag {
+      background: rgba(255, 255, 255, 0.2);
+      backdrop-filter: blur(8px);
+      width: fit-content;
+      padding: 0.5rem 1rem;
+      border-radius: 50px;
+      color: white;
+      font-weight: 600;
+    }
+
+    h2, p {
+        text-shadow: 0 2px 10px rgba(0,0,0,0.3);
+    }
+  </style>
 </head>
 <body>
 
@@ -51,13 +84,12 @@ $flash = flash_get();
 
 <div class="auth-page">
   <div class="auth-left">
-    <img src="https://images.unsplash.com/photo-1563656157432-67560011e209?w=800&q=80" alt="AmusePark" />
     <div class="auth-left-overlay">
       <div class="hero-tag" style="margin-bottom:1.5rem;">⭐ Philippines' #1 Amusement Park</div>
-      <h2 style="font-size:2.5rem;font-weight:900;line-height:1.2;margin-bottom:1rem;">
+      <h2 style="font-size:2.5rem;font-weight:900;line-height:1.2;margin-bottom:1rem; color: #fff;">
         CREATE<br/>ACCOUNT
       </h2>
-      <p style="color:rgba(255,255,255,.8);font-size:1rem;">Join thousands of happy visitors!</p>
+      <p style="color:rgba(255,255,255,.9);font-size:1.1rem;">Join thousands of happy visitors!</p>
     </div>
   </div>
 
@@ -71,33 +103,35 @@ $flash = flash_get();
 
       <?php if ($flash && ($flash['type'] ?? '') === 'success'): ?>
         <div class="auth-alert auth-alert-success" style="display:block;">
-          <?= e($flash['message'] ?? '') ?>
+          <?= htmlspecialchars($flash['message'] ?? '') ?>
           <?php if (!empty($flash['action']) && is_array($flash['action'])): ?>
             <?php $href = (string)($flash['action']['href'] ?? ''); ?>
             <?php $label = (string)($flash['action']['label'] ?? ''); ?>
             <?php if ($href !== '' && $label !== ''): ?>
               <div style="margin-top:.5rem;">
-                <a href="<?= e($href) ?>" style="color:#166534;font-weight:800;text-decoration:underline;"><?= e($label) ?></a>
+                <a href="<?= htmlspecialchars($href) ?>" style="color:#166534;font-weight:800;text-decoration:underline;"><?= htmlspecialchars($label) ?></a>
               </div>
             <?php endif; ?>
           <?php endif; ?>
         </div>
       <?php endif; ?>
+
       <?php if ($flash && ($flash['type'] ?? '') === 'error'): ?>
-        <div class="auth-alert auth-alert-error" style="display:block;"><?= e($flash['message'] ?? '') ?></div>
+        <div class="auth-alert auth-alert-error" style="display:block;"><?= htmlspecialchars($flash['message'] ?? '') ?></div>
       <?php endif; ?>
+      
       <?php if ($error): ?>
-        <div class="auth-alert auth-alert-error" style="display:block;"><?= e($error) ?></div>
+        <div class="auth-alert auth-alert-error" style="display:block;"><?= htmlspecialchars($error) ?></div>
       <?php endif; ?>
 
       <form method="post">
         <div class="form-group">
           <label>Full Name</label>
-          <input type="text" name="full_name" id="reg-name" placeholder="XXX X. XXX" required />
+          <input type="text" name="full_name" id="reg-name" placeholder="Juan D. Dela Cruz" required />
         </div>
         <div class="form-group">
           <label>Email Address</label>
-          <input type="email" name="email" id="reg-email" placeholder="xxxx@email.com" required />
+          <input type="email" name="email" id="reg-email" placeholder="juan@email.com" required />
         </div>
         <div class="form-group">
           <label>Phone Number</label>
@@ -114,7 +148,7 @@ $flash = flash_get();
         <div style="margin-bottom:1.25rem;">
           <label style="display:flex;align-items:flex-start;gap:.5rem;font-weight:400;font-size:.85rem;cursor:pointer;">
             <input type="checkbox" required style="margin-top:3px;" />
-            I agree to the <a href="#" style="color:#1d4ed8;text-decoration:none;">Terms of Service</a> and <a href="#" style="color:#1d4ed8;text-decoration:none;">Privacy Policy</a>
+            <span>I agree to the <a href="#" style="color:#1d4ed8;text-decoration:none;">Terms of Service</a> and <a href="#" style="color:#1d4ed8;text-decoration:none;">Privacy Policy</a></span>
           </label>
         </div>
         <button type="submit" class="btn btn-primary btn-full" style="font-size:1rem;padding:.85rem;">
@@ -130,4 +164,3 @@ $flash = flash_get();
 </div>
 </body>
 </html>
-

@@ -56,7 +56,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $duration = $_POST['duration_minutes'] !== '' ? (int)$_POST['duration_minutes'] : null;
         $minHeight = $_POST['min_height_cm'] !== '' ? (int)$_POST['min_height_cm'] : null;
         $capacity = $_POST['max_capacity'] !== '' ? (int)$_POST['max_capacity'] : null;
-        $price = $_POST['price'] !== '' ? (float)$_POST['price'] : 0.0;
         $isFeatured = isset($_POST['is_featured']) ? 1 : 0;
 
         $imageUrl = file_to_data_url($_FILES['image_file'] ?? []);
@@ -67,7 +66,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if ($action === 'create') {
             $stmt = $pdo->prepare(
                 'INSERT INTO rides (name,description,category,duration_minutes,min_height_cm,max_capacity,price,status,image_url,is_featured)
-                 VALUES (?,?,?,?,?,?,?,?,?,?)'
+                 VALUES (?,?,?,?,?,?,0,?,?,?)'
             );
             $stmt->execute([
                 $name,
@@ -76,7 +75,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $duration,
                 $minHeight,
                 $capacity,
-                $price,
                 $status,
                 $imageUrl,
                 $isFeatured
@@ -92,7 +90,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         $stmt = $pdo->prepare(
             'UPDATE rides
-             SET name=?,description=?,category=?,duration_minutes=?,min_height_cm=?,max_capacity=?,price=?,status=?,image_url=?,is_featured=?
+             SET name=?,description=?,category=?,duration_minutes=?,min_height_cm=?,max_capacity=?,status=?,image_url=?,is_featured=?
              WHERE id=?'
         );
         $stmt->execute([
@@ -102,7 +100,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $duration,
             $minHeight,
             $capacity,
-            $price,
             $status,
             $imageUrl,
             $isFeatured,
@@ -158,6 +155,7 @@ $formAction = $rideToEdit ? 'update' : 'create';
     <li><a href="rides.php" class="active">Rides</a></li>
     <li><a href="bookings.php">Bookings</a></li>
     <li><a href="ticket-types.php">Ticket Types</a></li>
+     <li><a href="../profile.php">Profile</a></li>
     <li><a href="../logout.php" style="color:#dc2626;font-weight:600;">Logout</a></li>
   </ul>
 </nav>
@@ -224,7 +222,7 @@ $formAction = $rideToEdit ? 'update' : 'create';
               </div>
             </div>
             <div style="text-align:right;">
-              <div style="font-weight:800; color:#1d4ed8; font-size:1.1rem;">₱<?= number_format((float)($r['price'] ?? 0), 0) ?></div>
+              <span class="badge badge-blue"><?= e((string)($r['status'] ?? '')) ?></span>
             </div>
           </div>
           <p style="color:#64748b; font-size:0.85rem; line-height:1.4; margin-bottom:0.75rem;">
@@ -296,11 +294,6 @@ $formAction = $rideToEdit ? 'update' : 'create';
       </div>
 
       <div class="form-group">
-        <label>Price (₱)</label>
-        <input name="price" type="number" step="0.01" value="<?= e((string)($rideToEdit['price'] ?? '0')) ?>" />
-      </div>
-
-      <div class="form-group">
         <label>Ride Image</label>
         <input name="image_file" type="file" accept="image/*" />
         <?php if (!empty($rideToEdit['image_url'])): ?>
@@ -327,4 +320,3 @@ $formAction = $rideToEdit ? 'update' : 'create';
 
 </body>
 </html>
-

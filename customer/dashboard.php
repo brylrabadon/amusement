@@ -21,6 +21,7 @@ $flash = flash_get();
     <li><a href="../rides.php">Rides</a></li>
     <li><a href="../tickets.php">Buy Tickets</a></li>
     <li><a href="../my-bookings.php">My Bookings</a></li>
+     <li><a href="../profile.php">Profile</a></li>
     <li><a href="../logout.php" style="color:#dc2626;font-weight:600;">Logout</a></li>
   </ul>
 </nav>

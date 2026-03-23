@@ -172,3 +172,18 @@ tr:hover td { background: #f8fafc; }
   .auth-left { display: none; }
   .auth-card { padding: 1.75rem; }
 }
+/* Ticket selection cards – hover and selected */
+.ticket-option {
+  transition: box-shadow 0.25s ease, border-color 0.25s ease, transform 0.2s ease;
+}
+.ticket-option:hover {
+  box-shadow: 0 8px 24px rgba(29, 78, 216, 0.15);
+  border-color: #93c5fd !important;
+}
+.ticket-option:has(input:checked) {
+  border-color: #1d4ed8 !important;
+  box-shadow: 0 4px 20px rgba(29, 78, 216, 0.2);
+}
+.ticket-option .ticket-total-row {
+  min-height: 2.5rem;
+}
