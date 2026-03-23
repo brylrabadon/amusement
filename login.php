@@ -19,12 +19,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (($result['success'] ?? false) === true) {
         $loggedUser = $result['user'];
         flash_set('success', 'Login successful!');
+<<<<<<< HEAD
+=======
+        // Honour ?next= redirect (e.g. from tickets.php checkout)
+>>>>>>> 944246f7d1f7012ed1c7107d999e7fdfb8af41b5
         $next = trim((string)($_GET['next'] ?? $_POST['next'] ?? ''));
         if ($next !== '' && !str_contains($next, '//') && !str_starts_with($next, 'http')) {
             redirect($next);
         }
+<<<<<<< HEAD
         if (($loggedUser['role'] ?? '') === 'admin') redirect('admin/admin-dashboard.php');
         redirect('index.php');
+=======
+        if (($user['role'] ?? '') === 'admin') redirect('admin/admin-dashboard.php');
+        redirect('customer/dashboard.php');
+>>>>>>> 944246f7d1f7012ed1c7107d999e7fdfb8af41b5
     } else {
         $error = $result['message'] ?? 'Invalid email or password.';
     }
@@ -63,6 +72,7 @@ $flash = flash_get();
   </style>
 </head>
 <body>
+<<<<<<< HEAD
 <?php render_nav(null, 'login'); ?>
 <div class="auth-split">
   <div class="auth-image">
@@ -70,6 +80,30 @@ $flash = flash_get();
       <div class="auth-image-tag">⭐ Philippines' #1 Amusement Park</div>
       <h2>READY FOR<br>THE THRILL?</h2>
       <p>Experience the magic of AmusePark.</p>
+=======
+
+<nav>
+  <a class="logo" href="index.php">Amuse<span>Park</span></a>
+  <ul>
+    <li><a href="index.php">Home</a></li>
+    <li><a href="rides.php">Rides</a></li>
+    <li><a href="tickets.php">Tickets</a></li>
+    <li><a href="contact.php">Contact</a></li>
+    <li><a href="login.php" class="btn btn-yellow">Login</a></li>
+  </ul>
+</nav>
+
+<div class="auth-page">
+  <div class="auth-left">
+    <img src="https://images.unsplash.com/photo-1513889961551-628c1e5e2ee9?q=80&w=2070" alt="AmusePark Adventure" />
+    
+    <div class="auth-left-overlay">
+      <div class="hero-tag" style="margin-bottom:1.5rem; background: #fbbf24; color: #000; padding: 0.4rem 1rem; border-radius: 2rem; display: inline-block; width: fit-content; font-weight: 700; font-size: 0.8rem;">⭐ Philippines' #1 Amusement Park</div>
+      <h2 style="font-size:3rem; font-weight:900; line-height:1.1; margin-bottom:1rem; color: #fff;">
+        READY FOR THE<br/>THRILL?
+      </h2>
+      <p style="color:rgba(255,255,255,0.9); font-size:1.1rem; margin-bottom: 2rem;">Experience the magic of AmusePark.</p>
+>>>>>>> 944246f7d1f7012ed1c7107d999e7fdfb8af41b5
     </div>
   </div>
   <div class="auth-form-side">
@@ -87,9 +121,23 @@ $flash = flash_get();
         <?php if (!empty($_GET['next'])): ?>
           <input type="hidden" name="next" value="<?= e($_GET['next']) ?>" />
         <?php endif; ?>
+<<<<<<< HEAD
         <div class="form-group"><label>Email Address</label><input type="email" name="email" placeholder="juan@email.com" required /></div>
         <div class="form-group"><label>Password</label><input type="password" name="password" placeholder="Enter your password" required /></div>
         <button type="submit" class="auth-submit">Log In</button>
+=======
+        <div class="form-group" style="margin-bottom: 1.25rem;">
+          <label style="display:block; margin-bottom: 0.5rem; font-weight: 600; color: #475569;">Email Address</label>
+          <input type="email" name="email" placeholder="xxxx@email.com" required style="width:100%; padding: 0.75rem; border: 1px solid #e2e8f0; border-radius: 0.5rem;" />
+        </div>
+        <div class="form-group" style="margin-bottom: 1.5rem;">
+          <label style="display:block; margin-bottom: 0.5rem; font-weight: 600; color: #475569;">Password</label>
+          <input type="password" name="password" placeholder="Enter your password" required style="width:100%; padding: 0.75rem; border: 1px solid #e2e8f0; border-radius: 0.5rem;" />
+        </div>
+        <button type="submit" class="btn btn-primary btn-full" style="font-size:1rem; padding:.85rem; width: 100%; background: #1d4ed8; color: #fff; border: none; border-radius: 0.5rem; cursor: pointer; font-weight: 700;">
+          Log In
+        </button>
+>>>>>>> 944246f7d1f7012ed1c7107d999e7fdfb8af41b5
       </form>
       <p style="text-align:center;margin-top:1.5rem;font-size:.9rem;color:#6b7280;">
         Don't have an account? <a href="register.php" class="auth-link">Sign Up</a>

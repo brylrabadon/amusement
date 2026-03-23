@@ -67,11 +67,44 @@ $isAdmin = ($user['role'] ?? '') === 'admin';
   </style>
 </head>
 <body>
+<<<<<<< HEAD
 <?php
 // For admin, render_nav expects paths relative to root — profile.php is at root so pass $user directly
 render_nav($user, 'profile');
 ?>
 <?php render_page_header($isAdmin ? 'Admin Profile' : 'My Profile', $isAdmin ? 'Manage your admin account' : 'Your account details'); ?>
+=======
+<?php if ($isAdmin): ?>
+<nav class="admin-nav">
+  <a class="logo" href="index.php">Amuse<span>Park</span></a>
+  <ul>
+    <li><a href="admin/admin-dashboard.php">Dashboard</a></li>
+    <li><a href="admin/rides.php">Rides</a></li>
+    <li><a href="admin/bookings.php">Bookings</a></li>
+    <li><a href="admin/ticket-types.php">Ticket Types</a></li>
+    <li><a href="admin/scanner.php">Scanner</a></li>
+    <li><a href="profile.php" class="active">Profile</a></li>
+    <li><a href="logout.php" style="color:#dc2626;font-weight:600;">Logout</a></li>
+  </ul>
+</nav>
+<?php else: ?>
+<nav>
+  <a class="logo" href="index.php">Amuse<span>Park</span></a>
+  <ul>
+    <li><a href="rides.php">Rides</a></li>
+    <li><a href="tickets.php">Buy Tickets</a></li>
+    <li><a href="my-bookings.php">My Bookings</a></li>
+    <li><a href="profile.php" class="active">Profile</a></li>
+    <li><a href="logout.php" style="color:#dc2626;font-weight:600;">Logout</a></li>
+  </ul>
+</nav>
+<?php endif; ?>
+
+<div class="page-header">
+  <h1><?= $isAdmin ? 'Admin' : 'My' ?> Profile</h1>
+  <p><?= $isAdmin ? 'Manage your admin account' : 'Your account details' ?></p>
+</div>
+>>>>>>> 944246f7d1f7012ed1c7107d999e7fdfb8af41b5
 
 <div class="container" style="max-width:560px;">
   <?php if ($flash && ($flash['message'] ?? '') !== ''): ?>

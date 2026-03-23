@@ -4,7 +4,11 @@ require_once __DIR__ . '/lib/auth.php';
 require_once __DIR__ . '/lib/layout.php';
 
 $user = current_user();
+<<<<<<< HEAD
 $pdo  = db();
+=======
+$pdo = db();
+>>>>>>> 944246f7d1f7012ed1c7107d999e7fdfb8af41b5
 
 $q   = trim((string)($_GET['q'] ?? ''));
 $cat = (string)($_GET['cat'] ?? 'All');
@@ -73,7 +77,25 @@ $cats      = ['All','Thrill','Family','Kids','Water','Classic'];
   </style>
 </head>
 <body>
+<<<<<<< HEAD
 <?php render_nav($user, 'rides'); ?>
+=======
+<nav>
+  <a class="logo" href="index.php">Amuse<span>Park</span></a>
+  <ul>
+    <li><a href="rides.php" class="active">Rides</a></li>
+    <li><a href="tickets.php">Buy Tickets</a></li>
+    <?php if ($user): ?>
+      <li><a href="my-bookings.php">My Bookings</a></li>
+      <li><a href="profile.php">Profile</a></li>
+      <li><a href="logout.php" style="color:#dc2626;font-weight:600;">Logout</a></li>
+    <?php else: ?>
+      <li><a href="login.php">Login</a></li>
+      <li><a href="register.php">Register</a></li>
+    <?php endif; ?>
+  </ul>
+</nav>
+>>>>>>> 944246f7d1f7012ed1c7107d999e7fdfb8af41b5
 
 <?php render_page_header('Our Rides', 'Discover all our thrilling attractions'); ?>
 

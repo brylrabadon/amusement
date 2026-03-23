@@ -202,12 +202,30 @@ try {
 </head>
 <body>
 
+<<<<<<< HEAD
 <!-- Top info bar + Nav (shared) -->
 <?php
 // Homepage always shows the public/customer nav — even for admins
 $navUser = $user ? array_merge($user, ['role' => 'customer']) : null;
 render_nav($navUser, 'home');
 ?>
+=======
+<nav>
+  <a class="logo" href="index.php">Amuse<span>Park</span></a>
+  <ul>
+    <li><a href="index.php" class="active">Home</a></li>
+    <li><a href="tickets.php">Tickets</a></li>
+    <li><a href="rides.php">Rides</a></li>
+    <li><a href="contact.php">Contact</a></li>
+    <?php if ($user): ?>
+      <li><a href="my-bookings.php">My Bookings</a></li>
+      <li><a href="logout.php" style="color:#dc2626;font-weight:600;">Logout</a></li>
+    <?php else: ?>
+      <li><a href="login.php" class="btn btn-yellow">Login</a></li>
+    <?php endif; ?>
+  </ul>
+</nav>
+>>>>>>> 944246f7d1f7012ed1c7107d999e7fdfb8af41b5
 
 <!-- Hero -->
 <section class="home-hero">

@@ -62,7 +62,32 @@ $flash = flash_get();
 <?php render_nav($user, 'contact'); ?>
 <?php render_page_header('Contact Us', 'Questions, feedback, or group bookings? We\'d love to hear from you.'); ?>
 
+<<<<<<< HEAD
 <div class="contact-grid">
+=======
+<nav>
+  <a class="logo" href="index.php">Amuse<span>Park</span></a>
+  <ul>
+    <li><a href="index.php">Home</a></li>
+    <li><a href="rides.php">Rides</a></li>
+    <li><a href="tickets.php">Tickets</a></li>
+    <li><a href="contact.php" class="active">Contact</a></li>
+    <?php if ($user): ?>
+      <li><a href="my-bookings.php">My Bookings</a></li>
+      <li><a href="logout.php" style="color:#dc2626;font-weight:600;">Logout</a></li>
+    <?php else: ?>
+      <li><a href="login.php" class="btn btn-yellow">Login</a></li>
+    <?php endif; ?>
+  </ul>
+</nav>
+
+<div class="page-header">
+  <h1>Contact Us</h1>
+  <p>Questions, feedback, or group bookings? We’d love to hear from you.</p>
+</div>
+
+<div class="content-wrapper">
+>>>>>>> 944246f7d1f7012ed1c7107d999e7fdfb8af41b5
   <?php if ($flash && ($flash['message'] ?? '') !== ''): ?>
     <div style="grid-column:1/-1;padding:1rem 1.25rem;border-radius:.75rem;font-weight:600;
       background:<?= ($flash['type']??'')!=='error'?'#dcfce7':'#fee2e2' ?>;
