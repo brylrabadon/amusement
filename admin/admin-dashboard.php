@@ -144,6 +144,7 @@ $flash = flash_get();
     <li><a href="rides.php">Rides</a></li>
     <li><a href="bookings.php">Bookings</a></li>
     <li><a href="ticket-types.php">Ticket Types</a></li>
+    <li><a href="scanner.php">Scanner</a></li>
     <li><a href="../profile.php">Profile</a></li>
     <li><a href="../logout.php" style="color:#dc2626;font-weight:600;">Logout</a></li>
   </ul>
@@ -192,6 +193,7 @@ $flash = flash_get();
       <a class="btn btn-primary" href="rides.php">Manage Rides</a>
       <a class="btn btn-outline" href="ticket-types.php">Manage Ticket Types</a>
       <a class="btn btn-outline" href="bookings.php">View Bookings</a>
+      <a class="btn btn-outline" href="scanner.php">🔍 Scanner</a>
     </div>
   </div>
 </div>

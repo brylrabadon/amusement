@@ -87,6 +87,7 @@ $isAdmin = ($user['role'] ?? '') === 'admin';
     <li><a href="admin/rides.php">Rides</a></li>
     <li><a href="admin/bookings.php">Bookings</a></li>
     <li><a href="admin/ticket-types.php">Ticket Types</a></li>
+    <li><a href="admin/scanner.php">Scanner</a></li>
     <li><a href="profile.php" class="active">Profile</a></li>
     <li><a href="logout.php" style="color:#dc2626;font-weight:600;">Logout</a></li>
   </ul>

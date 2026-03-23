@@ -134,8 +134,15 @@ if (!function_exists('e')) {
   <a class="logo" href="index.php">Amuse<span>Park</span></a>
   <ul>
     <li><a href="index.php">Home</a></li>
+    <li><a href="rides.php">Rides</a></li>
+    <li><a href="tickets.php">Tickets</a></li>
     <li><a href="contact.php" class="active">Contact</a></li>
-    <li><a href="login.php" class="btn btn-yellow">Login</a></li>
+    <?php if ($user): ?>
+      <li><a href="my-bookings.php">My Bookings</a></li>
+      <li><a href="logout.php" style="color:#dc2626;font-weight:600;">Logout</a></li>
+    <?php else: ?>
+      <li><a href="login.php" class="btn btn-yellow">Login</a></li>
+    <?php endif; ?>
   </ul>
 </nav>
 

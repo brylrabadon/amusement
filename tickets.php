@@ -3,8 +3,14 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/lib/auth.php';
 
-$user = require_login('customer');
-$pdo = db();
+// 5.6 — Conditional include of expiry cron helper
+if (file_exists(__DIR__ . '/cron/expire_bookings.php')) {
+    require_once __DIR__ . '/cron/expire_bookings.php';
+}
+
+// 5.1 — Optional auth (unauthenticated users allowed at step 0)
+$user = current_user();
+$pdo  = db();
 
 function booking_ref(): string
 {
@@ -23,6 +29,13 @@ function reset_booking_flow(): void
 
 $flow = $_SESSION['booking_flow'] ?? [];
 if (!is_array($flow)) $flow = [];
+
+// Handle expired booking redirect
+if (isset($_GET['expired']) && (int)$_GET['expired'] === 1) {
+    reset_booking_flow();
+    flash_set('error', 'Your booking has expired. Please start a new booking.');
+    redirect('tickets.php');
+}
 
 $step = isset($_GET['step']) ? (int)$_GET['step'] : 0;
 if ($step < 0 || $step > 3) $step = 0;
@@ -49,10 +62,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $flow['ticket_type_id'] = $ticketId;
         $flow['quantity'] = $qty;
         $_SESSION['booking_flow'] = $flow;
+        // 5.1 — Redirect to step 1; login check happens there
         redirect('tickets.php?step=1');
     }
 
+    // 5.1 — Step 1 (details) requires login
     if ($action === 'details') {
+        if (!$user) {
+            redirect('login.php?next=tickets.php%3Fstep%3D1');
+        }
+
         $ticketId = (int)($flow['ticket_type_id'] ?? 0);
         $qty = (int)($flow['quantity'] ?? 1);
         if ($ticketId <= 0) {
@@ -60,9 +79,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             redirect('tickets.php');
         }
 
-        $name = trim((string)($_POST['customer_name'] ?? ''));
-        $email = trim((string)($_POST['customer_email'] ?? ''));
-        $phone = trim((string)($_POST['customer_phone'] ?? ''));
+        $name      = trim((string)($_POST['customer_name'] ?? ''));
+        $email     = trim((string)($_POST['customer_email'] ?? ''));
+        $phone     = trim((string)($_POST['customer_phone'] ?? ''));
         $visitDate = (string)($_POST['visit_date'] ?? '');
 
         if ($name === '' || $email === '' || $visitDate === '') {
@@ -83,9 +102,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
 
         $unitPrice = (float)$type['price'];
-        $total = $unitPrice * max(1, $qty);
-        $ref = booking_ref();
-        $qrData = 'AMUSEPARK|' . $ref . '|' . $name . '|' . $visitDate . '|' . ($type['name'] ?? '') . 'x' . $qty;
+        $total     = $unitPrice * max(1, $qty);
+        $ref       = booking_ref();
+        $qrData    = 'AMUSEPARK|' . $ref . '|' . $name . '|' . $visitDate . '|' . ($type['name'] ?? '') . 'x' . $qty;
 
         $ins = $pdo->prepare(
             'INSERT INTO bookings (booking_reference, user_id, customer_name, customer_email, customer_phone, visit_date,
@@ -111,23 +130,47 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         ]);
         $bookingId = (int)$pdo->lastInsertId();
 
+        // 5.4 — Insert one ticket row per quantity unit
+        try {
+            $insTicket = $pdo->prepare(
+                'INSERT INTO tickets (booking_id, ticket_number, status) VALUES (?, ?, ?)'
+            );
+            for ($i = 1; $i <= max(1, $qty); $i++) {
+                $ticketNumber = 'TK-' . $ref . '-' . str_pad((string)$i, 3, '0', STR_PAD_LEFT);
+                $insTicket->execute([$bookingId, $ticketNumber, 'ACTIVE']);
+            }
+        } catch (\Throwable $e) {
+            // tickets table may not exist yet; booking still proceeds
+        }
+
         $flow['booking_id'] = $bookingId;
         $_SESSION['booking_flow'] = $flow;
         redirect('tickets.php?step=2');
     }
 
     if ($action === 'confirm_payment') {
+        if (!$user) {
+            redirect('login.php?next=tickets.php%3Fstep%3D1');
+        }
+
         $bookingId = (int)($flow['booking_id'] ?? 0);
         if ($bookingId <= 0) {
             flash_set('error', 'No pending booking found.');
             redirect('tickets.php');
         }
 
+        // 5.6 — Re-fetch booking and check for expiry
         $st = $pdo->prepare('SELECT * FROM bookings WHERE id = ? AND user_id = ?');
         $st->execute([$bookingId, (int)$user['id']]);
         $booking = $st->fetch();
         if (!$booking) {
             flash_set('error', 'Booking not found.');
+            reset_booking_flow();
+            redirect('tickets.php');
+        }
+
+        if (($booking['payment_status'] ?? '') === 'Cancelled') {
+            flash_set('error', 'Booking expired. Please start a new booking.');
             reset_booking_flow();
             redirect('tickets.php');
         }
@@ -141,10 +184,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 $flash = flash_get();
 
+// 5.1 — Enforce login for step 1 on GET
+if ($step === 1 && !$user) {
+    redirect('login.php?next=tickets.php%3Fstep%3D1');
+}
+
 // Resolve current selection/booking for display
 $selectedType = null;
-$selectedQty = (int)($flow['quantity'] ?? 1);
-$selectedId = (int)($flow['ticket_type_id'] ?? 0);
+$selectedQty  = (int)($flow['quantity'] ?? 1);
+$selectedId   = (int)($flow['ticket_type_id'] ?? 0);
 if ($selectedId > 0) {
     foreach ($types as $t) {
         if ((int)$t['id'] === $selectedId) {
@@ -156,6 +204,9 @@ if ($selectedId > 0) {
 
 $booking = null;
 if ($step >= 2) {
+    if (!$user) {
+        redirect('login.php?next=tickets.php%3Fstep%3D1');
+    }
     $bookingId = (int)($flow['booking_id'] ?? 0);
     if ($bookingId > 0) {
         $st = $pdo->prepare('SELECT * FROM bookings WHERE id = ? AND user_id = ?');
@@ -167,6 +218,57 @@ if ($step >= 2) {
         reset_booking_flow();
     }
 }
+
+// 5.6 — Run expiry check at start of step 2 render
+if ($step === 2) {
+    if (function_exists('expire_pending_bookings')) {
+        expire_pending_bookings($pdo);
+    }
+}
+
+// 5.2 — For step 0: fetch rides per ticket type from ticket_ride JOIN rides
+$typeRides = []; // [ticket_type_id => [ride_name, ...]]
+if ($step === 0) {
+    foreach ($types as $t) {
+        $tid = (int)$t['id'];
+        try {
+            $rs = $pdo->prepare(
+                'SELECT r.name FROM ticket_ride tr JOIN rides r ON r.id = tr.ride_id WHERE tr.ticket_type_id = ? ORDER BY r.name ASC'
+            );
+            $rs->execute([$tid]);
+            $typeRides[$tid] = $rs->fetchAll(\PDO::FETCH_COLUMN);
+        } catch (\Throwable $e) {
+            $typeRides[$tid] = []; // ticket_ride table not yet created
+        }
+    }
+}
+
+// 5.8 — For step 3: fetch individual tickets and ride list for popup
+$popupTickets = [];
+$popupRides   = [];
+if ($step === 3 && $booking) {
+    try {
+        $st = $pdo->prepare('SELECT ticket_number FROM tickets WHERE booking_id = ? ORDER BY ticket_number ASC');
+        $st->execute([(int)$booking['id']]);
+        $popupTickets = $st->fetchAll(\PDO::FETCH_COLUMN);
+    } catch (\Throwable $e) {
+        $popupTickets = [];
+    }
+
+    $ttid = (int)($booking['ticket_type_id'] ?? 0);
+    if ($ttid > 0) {
+        try {
+            $rs = $pdo->prepare(
+                'SELECT r.name FROM ticket_ride tr JOIN rides r ON r.id = tr.ride_id WHERE tr.ticket_type_id = ? ORDER BY r.name ASC'
+            );
+            $rs->execute([$ttid]);
+            $popupRides = $rs->fetchAll(\PDO::FETCH_COLUMN);
+        } catch (\Throwable $e) {
+            $popupRides = [];
+        }
+    }
+}
+
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -181,9 +283,14 @@ if ($step >= 2) {
   <ul>
     <li><a href="rides.php">Rides</a></li>
     <li><a href="tickets.php" class="active">Buy Tickets</a></li>
-    <li><a href="my-bookings.php">My Bookings</a></li>
-    <li><a href="profile.php">Profile</a></li>
-    <li><a href="logout.php" style="color:#dc2626;font-weight:600;">Logout</a></li>
+    <?php if ($user): ?>
+      <li><a href="my-bookings.php">My Bookings</a></li>
+      <li><a href="profile.php">Profile</a></li>
+      <li><a href="logout.php" style="color:#dc2626;font-weight:600;">Logout</a></li>
+    <?php else: ?>
+      <li><a href="login.php">Login</a></li>
+      <li><a href="register.php">Register</a></li>
+    <?php endif; ?>
   </ul>
 </nav>
 
@@ -220,29 +327,42 @@ if ($step >= 2) {
         <div style="display:grid;gap:1rem;margin-bottom:1.5rem;">
           <?php foreach ($types as $t):
             $price = (float)$t['price'];
-            $tid = (int)$t['id'];
+            $tid   = (int)$t['id'];
+            $rides = $typeRides[$tid] ?? [];
           ?>
-            <label class="card ticket-option" style="padding:1.25rem;display:flex;justify-content:space-between;gap:1rem;align-items:center;cursor:pointer;border:2px solid <?= $tid === $selectedId ? '#1d4ed8' : '#e2e8f0' ?>;">
-              <div>
+            <div class="card ticket-option" style="padding:1.25rem;display:flex;justify-content:space-between;gap:1rem;align-items:flex-start;cursor:pointer;border:2px solid <?= $tid === $selectedId ? '#1d4ed8' : '#e2e8f0' ?>;"
+                 onclick="document.getElementById('radio-<?= $tid ?>').checked=true;document.querySelectorAll('.ticket-option').forEach(function(el){el.style.borderColor='#e2e8f0';});this.style.borderColor='#1d4ed8';updateTicketTotal();">
+              <div style="flex:1;">
                 <div style="display:flex;align-items:center;gap:.5rem;margin-bottom:.25rem;">
                   <strong style="font-size:1.1rem;"><?= e($t['name']) ?></strong>
                   <span class="badge badge-blue"><?= e($t['category']) ?></span>
                 </div>
                 <p style="color:#64748b;font-size:.9rem;"><?= e($t['description'] ?? '') ?></p>
-                <?php if (!empty($t['max_rides'])): ?>
-                  <p style="color:#7c3aed;font-size:.8rem;margin-top:.25rem;">Includes <?= (int)$t['max_rides'] ?> rides</p>
+                <?php if (isset($t['max_rides']) && $t['max_rides'] !== null && $t['max_rides'] !== ''): ?>
+                  <p style="color:#7c3aed;font-size:.8rem;margin-top:.25rem;font-weight:600;"><?= (int)$t['max_rides'] ?> rides included</p>
                 <?php else: ?>
-                  <p style="color:#7c3aed;font-size:.8rem;margin-top:.25rem;">Unlimited rides</p>
+                  <p style="color:#7c3aed;font-size:.8rem;margin-top:.25rem;font-weight:600;">Unlimited rides</p>
+                <?php endif; ?>
+                <?php if (count($rides) > 0): ?>
+                  <div style="margin-top:.6rem;">
+                    <div style="font-size:.8rem;color:#475569;font-weight:600;margin-bottom:.3rem;">Included Rides:</div>
+                    <div style="display:flex;flex-wrap:wrap;gap:.3rem;margin-top:.2rem;">
+                      <?php foreach ($rides as $rideName): ?>
+                        <span style="background:#eff6ff;color:#1d4ed8;border-radius:.4rem;padding:.15rem .5rem;font-size:.78rem;">🎢 <?= e($rideName) ?></span>
+                      <?php endforeach; ?>
+                    </div>
+                  </div>
                 <?php endif; ?>
               </div>
               <div style="text-align:right;flex-shrink:0;">
                 <div style="font-size:1.5rem;font-weight:900;color:#1d4ed8;">₱<?= number_format($price, 0) ?></div>
                 <div style="font-size:.8rem;color:#94a3b8;margin-top:.25rem;">per person</div>
               </div>
-              <div style="margin-left:1rem;">
-                <input type="radio" name="ticket_type_id" value="<?= $tid ?>" data-price="<?= (float)$price ?>" <?= $tid === $selectedId ? 'checked' : '' ?> />
+              <div style="margin-left:1rem;padding-top:.25rem;" onclick="event.stopPropagation();">
+                <input type="radio" id="radio-<?= $tid ?>" name="ticket_type_id" value="<?= $tid ?>" data-price="<?= (float)$price ?>" <?= $tid === $selectedId ? 'checked' : '' ?>
+                       onchange="document.querySelectorAll('.ticket-option').forEach(function(el){el.style.borderColor='#e2e8f0';});this.closest('.ticket-option').style.borderColor='#1d4ed8';updateTicketTotal();" />
               </div>
-            </label>
+            </div>
           <?php endforeach; ?>
         </div>
 
@@ -266,7 +386,7 @@ if ($step >= 2) {
         var totalEl = document.getElementById('ticket-total-amount');
         var qtyInput = document.getElementById('ticket-qty');
         function formatNum(n) { return '₱' + Math.round(n).toLocaleString(); }
-        function updateTotal() {
+        window.updateTicketTotal = function() {
           var radio = form.querySelector('input[name="ticket_type_id"]:checked');
           var qty = parseInt(qtyInput.value, 10) || 1;
           qty = Math.max(1, qty);
@@ -274,13 +394,13 @@ if ($step >= 2) {
           if (!radio || !totalEl) return;
           var price = parseFloat(radio.getAttribute('data-price')) || 0;
           totalEl.textContent = formatNum(price * qty);
-        }
+        };
         form.querySelectorAll('input[name="ticket_type_id"]').forEach(function(r) {
-          r.addEventListener('change', updateTotal);
+          r.addEventListener('change', updateTicketTotal);
         });
-        if (qtyInput) qtyInput.addEventListener('input', updateTotal);
-        if (qtyInput) qtyInput.addEventListener('change', updateTotal);
-        updateTotal();
+        if (qtyInput) qtyInput.addEventListener('input', updateTicketTotal);
+        if (qtyInput) qtyInput.addEventListener('change', updateTicketTotal);
+        updateTicketTotal();
       })();
       </script>
     <?php endif; ?>
@@ -315,8 +435,51 @@ if ($step >= 2) {
   <?php endif; ?>
 
   <?php if ($step === 2 && $booking): ?>
+    <?php
+      // Calculate seconds remaining for the 3-minute expiry countdown
+      $createdAt = strtotime((string)($booking['created_at'] ?? 'now'));
+      $expiresAt = $createdAt + 180; // 3 minutes
+      $secondsLeft = max(0, $expiresAt - time());
+    ?>
     <h2 style="font-weight:800;margin-bottom:.5rem;">Pay via QR Ph</h2>
-    <p style="color:#64748b;margin-bottom:1.5rem;">Scan the QR code below with your banking app or GCash</p>
+    <p style="color:#64748b;margin-bottom:1rem;">Scan the QR code below with your banking app or GCash</p>
+
+    <!-- 3-minute countdown timer -->
+    <div id="expiry-banner" style="background:#fef3c7;border:1px solid #fcd34d;border-radius:.75rem;padding:.85rem 1.25rem;margin-bottom:1.25rem;display:flex;align-items:center;gap:.75rem;">
+      <span style="font-size:1.25rem;">⏱</span>
+      <div>
+        <div style="font-weight:700;color:#92400e;font-size:.95rem;">Complete payment within <span id="countdown-display"><?= gmdate('i:s', $secondsLeft) ?></span></div>
+        <div style="font-size:.8rem;color:#b45309;">Booking will be automatically cancelled if unpaid</div>
+      </div>
+    </div>
+    <script>
+    (function() {
+      var secs = <?= (int)$secondsLeft ?>;
+      var el = document.getElementById('countdown-display');
+      var banner = document.getElementById('expiry-banner');
+      if (!el || secs <= 0) return;
+      var iv = setInterval(function() {
+        secs--;
+        if (secs <= 0) {
+          clearInterval(iv);
+          el.textContent = '0:00';
+          banner.style.background = '#fee2e2';
+          banner.style.borderColor = '#fca5a5';
+          banner.querySelector('div').style.color = '#991b1b';
+          // Auto-redirect when expired
+          window.location.href = 'tickets.php?expired=1';
+          return;
+        }
+        var m = Math.floor(secs / 60);
+        var s = secs % 60;
+        el.textContent = m + ':' + (s < 10 ? '0' : '') + s;
+        if (secs <= 30) {
+          banner.style.background = '#fee2e2';
+          banner.style.borderColor = '#fca5a5';
+        }
+      }, 1000);
+    })();
+    </script>
     <div class="card" style="padding:2rem;text-align:center;margin-bottom:1.5rem;">
       <div class="qr-box">
         <img src="https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=<?= e(urlencode((string)($booking['qr_code_data'] ?? $booking['booking_reference']))) ?>"
@@ -333,14 +496,77 @@ if ($step >= 2) {
     <div style="background:#eff6ff;border-radius:.75rem;padding:1rem;margin-bottom:1.5rem;font-size:.9rem;color:#1d4ed8;">
       <strong>How to pay:</strong> Open GCash/Maya or any QR Ph bank app → Scan QR → Confirm payment
     </div>
-    <form method="post" style="display:flex;gap:.75rem;">
-      <a class="btn btn-outline" href="tickets.php?step=1" style="flex:1;text-align:center;">Back</a>
-      <input type="hidden" name="action" value="confirm_payment" />
-      <button class="btn btn-success" type="submit" style="flex:1;">✅ I've Paid – Confirm</button>
-    </form>
+    <div style="display:flex;gap:.75rem;">
+      <form method="post" style="flex:1;">
+        <input type="hidden" name="action" value="reset" />
+        <button class="btn btn-outline btn-full" type="submit">← Start Over</button>
+      </form>
+      <form method="post" style="flex:1;">
+        <input type="hidden" name="action" value="confirm_payment" />
+        <button class="btn btn-success btn-full" type="submit">✅ I've Paid – Confirm</button>
+      </form>
+    </div>
   <?php endif; ?>
 
   <?php if ($step === 3 && $booking): ?>
+    <?php
+      // 5.8 — Reference popup (visible by default)
+      $paymentDatetime = !empty($booking['updated_at']) ? $booking['updated_at'] : date('Y-m-d H:i:s');
+    ?>
+    <div id="ref-popup" style="position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.65);z-index:9999;display:flex;align-items:center;justify-content:center;padding:1rem;">
+      <div style="background:#fff;border-radius:1rem;max-width:560px;width:100%;max-height:90vh;overflow-y:auto;padding:2rem;box-shadow:0 20px 60px rgba(0,0,0,.4);">
+        <div style="text-align:center;margin-bottom:1.5rem;">
+          <div style="font-size:2.5rem;">🎉</div>
+          <h2 style="font-size:1.6rem;font-weight:900;color:#1d4ed8;margin:.5rem 0 .25rem;">Booking Confirmed!</h2>
+          <div style="font-size:1.1rem;font-weight:700;color:#0f172a;letter-spacing:.05em;"><?= e($booking['booking_reference'] ?? '') ?></div>
+        </div>
+
+        <div style="border-top:1px solid #e2e8f0;padding-top:1rem;margin-bottom:1rem;">
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:.5rem .75rem;font-size:.9rem;">
+            <div style="color:#64748b;">Customer</div><div style="font-weight:600;"><?= e($booking['customer_name'] ?? '') ?></div>
+            <div style="color:#64748b;">Email</div><div><?= e($booking['customer_email'] ?? '') ?></div>
+            <div style="color:#64748b;">Phone</div><div><?= e($booking['customer_phone'] ?? '') ?></div>
+            <div style="color:#64748b;">Ticket Type</div><div><?= e($booking['ticket_type_name'] ?? '') ?></div>
+            <div style="color:#64748b;">Quantity</div><div><?= (int)($booking['quantity'] ?? 1) ?></div>
+            <div style="color:#64748b;">Visit Date</div><div><?= e((string)($booking['visit_date'] ?? '')) ?></div>
+            <div style="color:#64748b;">Payment Time</div><div><?= e($paymentDatetime) ?></div>
+            <div style="color:#64748b;">Total Paid</div><div style="font-weight:700;color:#16a34a;">₱<?= number_format((float)($booking['total_amount'] ?? 0), 0) ?></div>
+          </div>
+        </div>
+
+        <?php if (count($popupRides) > 0): ?>
+          <div style="margin-bottom:1rem;">
+            <div style="font-weight:700;font-size:.9rem;color:#374151;margin-bottom:.4rem;">Included Rides</div>
+            <div style="display:flex;flex-wrap:wrap;gap:.3rem;">
+              <?php foreach ($popupRides as $rn): ?>
+                <span style="background:#eff6ff;color:#1d4ed8;border-radius:.4rem;padding:.2rem .6rem;font-size:.8rem;"><?= e($rn) ?></span>
+              <?php endforeach; ?>
+            </div>
+          </div>
+        <?php endif; ?>
+
+        <?php if (count($popupTickets) > 0): ?>
+          <div style="margin-bottom:1.5rem;">
+            <div style="font-weight:700;font-size:.9rem;color:#374151;margin-bottom:.6rem;">Your Tickets</div>
+            <div style="display:flex;flex-direction:column;gap:1rem;">
+              <?php foreach ($popupTickets as $tn): ?>
+                <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:.75rem;padding:.75rem;display:flex;align-items:center;gap:1rem;">
+                  <img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=<?= e(urlencode($tn)) ?>"
+                       alt="QR <?= e($tn) ?>" style="width:80px;height:80px;border-radius:.4rem;flex-shrink:0;" />
+                  <div>
+                    <div style="font-size:.75rem;color:#64748b;">Ticket Number</div>
+                    <div style="font-family:monospace;font-weight:700;color:#0f172a;font-size:.9rem;"><?= e($tn) ?></div>
+                  </div>
+                </div>
+              <?php endforeach; ?>
+            </div>
+          </div>
+        <?php endif; ?>
+
+        <button onclick="document.getElementById('ref-popup').style.display='none'" class="btn btn-primary btn-full" style="font-size:1rem;padding:.85rem;">Got it</button>
+      </div>
+    </div>
+
     <div style="text-align:center;">
       <div class="success-icon">✅</div>
       <h2 style="font-size:2rem;font-weight:900;margin-bottom:.5rem;">Booking Confirmed!</h2>

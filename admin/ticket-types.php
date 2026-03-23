@@ -7,30 +7,30 @@ $user = require_admin();
 $pdo = db();
 
 /**
- * Helper to determine the text label for ride allowances
+ * Helper to determine the text label for ride allowances.
+ * Queries ticket_ride count instead of reading a ride_ids column.
  */
-function ticket_ride_label(array $t): string {
+function ticket_ride_label(array $t, PDO $pdo): string {
     if (!empty($t['max_rides'])) {
         if ((int)$t['max_rides'] === 5) return 'Super Five — 5 rides only';
         return (int)$t['max_rides'] . ' rides included';
     }
-    if (!empty($t['ride_ids'])) return 'Specific rides only';
+    try {
+        $stmt = $pdo->prepare('SELECT COUNT(*) FROM ticket_ride WHERE ticket_type_id = ?');
+        $stmt->execute([(int)$t['id']]);
+        $count = (int)$stmt->fetchColumn();
+        if ($count > 0) return $count . ' specific ride' . ($count === 1 ? '' : 's') . ' included';
+    } catch (\Throwable $e) {
+        // ticket_ride table not yet created
+    }
     return 'Unlimited rides';
 }
-
-/** * Check if the advanced 'ride_ids' column exists 
- */
-$hasRideIdsColumn = false;
-try {
-    $cols = $pdo->query("SHOW COLUMNS FROM ticket_types LIKE 'ride_ids'")->fetch();
-    $hasRideIdsColumn = $cols !== false;
-} catch (Throwable $e) {}
 
 // --- HANDLE POST ACTIONS ---
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $action = (string)($_POST['action'] ?? '');
 
-    // Delete Action
+    // Delete Action — FK CASCADE on ticket_ride handles cleanup automatically
     if ($action === 'delete') {
         $id = (int)($_POST['id'] ?? 0);
         if ($id > 0) {
@@ -68,43 +68,57 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $price = (float)$priceRaw;
         $rideAllowance = (string)($_POST['ride_allowance'] ?? 'unlimited');
         $isActive = isset($_POST['is_active']) ? 1 : 0;
-        
-        $maxRides = null;
-        $rideIds = null;
 
-        // Determine Ride Logic
+        $maxRides = null;
         if ($rideAllowance === 'super_five') {
             $maxRides = 5;
         } elseif ($rideAllowance === 'custom') {
             $maxRides = ($_POST['max_rides_custom'] ?? '') !== '' ? (int)$_POST['max_rides_custom'] : null;
-        } elseif ($rideAllowance === 'specific') {
-            $rids = isset($_POST['ride_ids']) && is_array($_POST['ride_ids']) ? array_map('intval', $_POST['ride_ids']) : [];
-            $rideIds = ($hasRideIdsColumn && $rids !== []) ? implode(',', $rids) : null;
-            $maxRides = ($_POST['max_rides_specific'] ?? '') !== '' ? (int)$_POST['max_rides_specific'] : null;
+        }
+
+        // Collect checked ride IDs for ticket_ride mapping
+        $checkedRideIds = [];
+        if (isset($_POST['ride_ids']) && is_array($_POST['ride_ids'])) {
+            $checkedRideIds = array_map('intval', $_POST['ride_ids']);
+            $checkedRideIds = array_filter($checkedRideIds, fn($v) => $v > 0);
+            $checkedRideIds = array_values($checkedRideIds);
         }
 
         if ($action === 'create') {
-            $sql = $hasRideIdsColumn 
-                ? 'INSERT INTO ticket_types (name, description, category, price, max_rides, ride_ids, is_active) VALUES (?,?,?,?,?,?,?)'
-                : 'INSERT INTO ticket_types (name, description, category, price, max_rides, is_active) VALUES (?,?,?,?,?,?)';
-            
-            $params = [$name, $description, $category, $price, $maxRides];
-            if ($hasRideIdsColumn) $params[] = $rideIds;
-            $params[] = $isActive;
+            $pdo->prepare(
+                'INSERT INTO ticket_types (name, description, category, price, max_rides, is_active) VALUES (?,?,?,?,?,?)'
+            )->execute([$name, $description, $category, $price, $maxRides, $isActive]);
 
-            $pdo->prepare($sql)->execute($params);
+            $newId = (int)$pdo->lastInsertId();
+
+            // Insert ticket_ride rows for checked rides
+            if ($newId > 0 && $checkedRideIds !== []) {
+                try {
+                    $pdo->prepare('DELETE FROM ticket_ride WHERE ticket_type_id = ?')->execute([$newId]);
+                    $ins = $pdo->prepare('INSERT INTO ticket_ride (ticket_type_id, ride_id) VALUES (?,?)');
+                    foreach ($checkedRideIds as $rideId) {
+                        $ins->execute([$newId, $rideId]);
+                    }
+                } catch (\Throwable $e) { /* ticket_ride table not yet created */ }
+            }
+
             flash_set('success', 'New ticket type created.');
         } else {
-            $sql = $hasRideIdsColumn
-                ? 'UPDATE ticket_types SET name=?, description=?, category=?, price=?, max_rides=?, ride_ids=?, is_active=? WHERE id=?'
-                : 'UPDATE ticket_types SET name=?, description=?, category=?, price=?, max_rides=?, is_active=? WHERE id=?';
-            
-            $params = [$name, $description, $category, $price, $maxRides];
-            if ($hasRideIdsColumn) $params[] = $rideIds;
-            $params[] = $isActive;
-            $params[] = $id;
+            $pdo->prepare(
+                'UPDATE ticket_types SET name=?, description=?, category=?, price=?, max_rides=?, is_active=? WHERE id=?'
+            )->execute([$name, $description, $category, $price, $maxRides, $isActive, $id]);
 
-            $pdo->prepare($sql)->execute($params);
+            // Replace ticket_ride rows: delete existing, insert new checked rides
+            try {
+                $pdo->prepare('DELETE FROM ticket_ride WHERE ticket_type_id = ?')->execute([$id]);
+                if ($checkedRideIds !== []) {
+                    $ins = $pdo->prepare('INSERT INTO ticket_ride (ticket_type_id, ride_id) VALUES (?,?)');
+                    foreach ($checkedRideIds as $rideId) {
+                        $ins->execute([$id, $rideId]);
+                    }
+                }
+            } catch (\Throwable $e) { /* ticket_ride table not yet created */ }
+
             flash_set('success', 'Ticket type updated.');
         }
         redirect('admin/ticket-types.php');
@@ -121,11 +135,24 @@ if ($edit > 0) {
     $typeToEdit = $st->fetch() ?: null;
 }
 
+// Pre-fetch assigned ride IDs for the ticket being edited
+$assignedRideIds = [];
+if ($typeToEdit) {
+    try {
+        $st2 = $pdo->prepare('SELECT ride_id FROM ticket_ride WHERE ticket_type_id = ?');
+        $st2->execute([(int)$typeToEdit['id']]);
+        $assignedRideIds = array_column($st2->fetchAll(), 'ride_id');
+        $assignedRideIds = array_map('intval', $assignedRideIds);
+    } catch (\Throwable $e) {
+        $assignedRideIds = []; // ticket_ride table not yet created
+    }
+}
+
 $types = $pdo->query('SELECT * FROM ticket_types ORDER BY price ASC')->fetchAll();
 $ridesList = $pdo->query('SELECT id, name FROM rides ORDER BY name')->fetchAll();
 $flash = flash_get();
 $modalOpen = $add || $typeToEdit;
-$categories = ['Single Day','Season Pass','Group','VIP','Child','Senior'];
+$categories = ['Single Day', 'Season Pass', 'Group', 'VIP'];
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -141,6 +168,9 @@ $categories = ['Single Day','Season Pass','Group','VIP','Child','Senior'];
         .badge-status { font-size: 0.75rem; padding: 0.2rem 0.5rem; border-radius: 1rem; font-weight: 600; text-transform: uppercase; }
         .status-active { background: #dcfce7; color: #166534; }
         .status-inactive { background: #fee2e2; color: #991b1b; }
+        .rides-checklist { max-height: 150px; overflow-y: auto; border: 1px solid #cbd5e1; border-radius: 0.35rem; padding: 0.5rem; background: white; margin-top: 0.5rem; }
+        .rides-checklist label { display: block; margin-bottom: 0.3rem; font-size: 0.875rem; cursor: pointer; }
+        .rides-checklist label:last-child { margin-bottom: 0; }
     </style>
 </head>
 <body>
@@ -151,14 +181,15 @@ $categories = ['Single Day','Season Pass','Group','VIP','Child','Senior'];
         <li><a href="rides.php">Rides</a></li>
         <li><a href="bookings.php">Bookings</a></li>
         <li><a href="ticket-types.php" class="active">Ticket Types</a></li>
-         <li><a href="../profile.php">Profile</a></li>
+        <li><a href="scanner.php">Scanner</a></li>
+        <li><a href="../profile.php">Profile</a></li>
         <li><a href="../logout.php" style="color:#dc2626;font-weight:600;">Logout</a></li>
     </ul>
 </nav>
 
 <div class="page-header" style="display:flex;align-items:center;justify-content:space-between;padding:2rem 3rem; background: #1e3a8a; color: white;">
     <div>
-        <h1 style="text-align:left; margin:0;">Ticket & Pricing Settings</h1>
+        <h1 style="text-align:left; margin:0;">Ticket &amp; Pricing Settings</h1>
         <p style="text-align:left; color:#bfdbfe; margin-top:0.25rem;">Manage park entry options and ride limits</p>
     </div>
     <a class="btn btn-yellow" href="ticket-types.php?add=1" style="box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);">+ Add Ticket Type</a>
@@ -185,16 +216,16 @@ $categories = ['Single Day','Season Pass','Group','VIP','Child','Senior'];
                         <span class="badge badge-blue" style="margin-top:0.5rem;"><?= e($t['category']) ?></span>
                     </div>
                     <div style="text-align:right;">
-                        <div style="font-size:1.75rem;font-weight:900;color:#1d4ed8;">₱<?= number_format((float)$t['price'], 0) ?></div>
+                        <div style="font-size:1.75rem;font-weight:900;color:#1d4ed8;">&#8369;<?= number_format((float)$t['price'], 0) ?></div>
                     </div>
                 </div>
-                
+
                 <p style="color:#475569; font-size:0.9rem; margin-bottom:1rem; min-height:2.5rem;"><?= e($t['description']) ?></p>
                 <p style="color:#7c3aed; font-weight:600; font-size:0.85rem; margin-bottom:1.25rem; display:flex; align-items:center; gap:0.4rem;">
-                    <span style="font-size:1.1rem;">🎢</span> <?= e(ticket_ride_label($t)) ?>
+                    <span style="font-size:1.1rem;">🎢</span> <?= e(ticket_ride_label($t, $pdo)) ?>
                 </p>
 
-                <div style="display:flex; gap:0.5rem; border-top: 1px solid #e2e8f0; pt:1rem; padding-top:1rem;">
+                <div style="display:flex; gap:0.5rem; border-top: 1px solid #e2e8f0; padding-top:1rem;">
                     <form method="post" style="flex:1;">
                         <input type="hidden" name="action" value="toggle" />
                         <input type="hidden" name="id" value="<?= (int)$t['id'] ?>" />
@@ -246,7 +277,7 @@ $categories = ['Single Day','Season Pass','Group','VIP','Child','Senior'];
                     </select>
                 </div>
                 <div class="form-group">
-                    <label>Price (₱) *</label>
+                    <label>Price (&#8369;) *</label>
                     <input name="price" type="number" step="1" value="<?= e((string)($typeToEdit['price'] ?? '')) ?>" required />
                 </div>
             </div>
@@ -255,10 +286,8 @@ $categories = ['Single Day','Season Pass','Group','VIP','Child','Senior'];
                 <label>Ride Allowance</label>
                 <?php
                     $curMax = isset($typeToEdit['max_rides']) ? (int)$typeToEdit['max_rides'] : null;
-                    $curRideIds = trim((string)($typeToEdit['ride_ids'] ?? ''));
                     $curAllowance = 'unlimited';
-                    if ($curRideIds !== '' && $hasRideIdsColumn) $curAllowance = 'specific';
-                    elseif ($curMax === 5) $curAllowance = 'super_five';
+                    if ($curMax === 5) $curAllowance = 'super_five';
                     elseif ($curMax !== null && $curMax > 0) $curAllowance = 'custom';
                 ?>
                 <div class="ride-allowance-options">
@@ -266,7 +295,7 @@ $categories = ['Single Day','Season Pass','Group','VIP','Child','Senior'];
                         <input type="radio" name="ride_allowance" value="unlimited" <?= $curAllowance === 'unlimited' ? 'checked' : '' ?> />
                         <span><strong>Unlimited rides</strong> — access to all rides</span>
                     </label>
-                    
+
                     <label class="allowance-row">
                         <input type="radio" name="ride_allowance" value="super_five" <?= $curAllowance === 'super_five' ? 'checked' : '' ?> />
                         <span><strong>Super Five</strong> — 5 rides only for this ticket</span>
@@ -278,25 +307,23 @@ $categories = ['Single Day','Season Pass','Group','VIP','Child','Senior'];
                         <input type="number" name="max_rides_custom" min="1" style="width:70px; padding:0.25rem;" value="<?= $curAllowance === 'custom' ? $curMax : '' ?>" />
                         <span style="color:#64748b; font-size:0.85rem;">rides included</span>
                     </label>
+                </div>
+            </div>
 
-                    <?php if ($hasRideIdsColumn): ?>
-                    <label class="allowance-row">
-                        <input type="radio" name="ride_allowance" value="specific" <?= $curAllowance === 'specific' ? 'checked' : '' ?> />
-                        <span><strong>Specific rides only</strong></span>
-                    </label>
-                    
-                    <div id="specific-rides-wrap" style="margin-left:2rem; <?= $curAllowance !== 'specific' ? 'display:none;' : '' ?>">
-                        <div style="max-height:120px; overflow-y:auto; border:1px solid #cbd5e1; border-radius:0.35rem; padding:0.5rem; background:white;">
-                            <?php 
-                            $selIds = $curRideIds !== '' ? array_map('intval', explode(',', $curRideIds)) : [];
-                            foreach ($ridesList as $r): 
-                            ?>
-                                <label style="display:block; margin-bottom:0.25rem; font-size:0.85rem; cursor:pointer;">
-                                    <input type="checkbox" name="ride_ids[]" value="<?= (int)$r['id'] ?>" <?= in_array((int)$r['id'], $selIds) ? 'checked' : '' ?> /> <?= e($r['name']) ?>
-                                </label>
-                            <?php endforeach; ?>
-                        </div>
-                    </div>
+            <div class="form-group">
+                <label>Assign Rides</label>
+                <p style="font-size:0.8rem; color:#64748b; margin:0.25rem 0 0.5rem;">Check the rides included with this ticket type.</p>
+                <div class="rides-checklist">
+                    <?php if (empty($ridesList)): ?>
+                        <p style="color:#94a3b8; font-size:0.85rem; margin:0;">No rides available. Add rides first.</p>
+                    <?php else: ?>
+                        <?php foreach ($ridesList as $r): ?>
+                            <label>
+                                <input type="checkbox" name="ride_ids[]" value="<?= (int)$r['id'] ?>"
+                                    <?= in_array((int)$r['id'], $assignedRideIds, true) ? 'checked' : '' ?> />
+                                <?= e($r['name']) ?>
+                            </label>
+                        <?php endforeach; ?>
                     <?php endif; ?>
                 </div>
             </div>
@@ -313,14 +340,5 @@ $categories = ['Single Day','Season Pass','Group','VIP','Child','Senior'];
         </form>
     </div>
 </div>
-
-<script>
-document.querySelectorAll('input[name="ride_allowance"]').forEach(function(radio) {
-    radio.addEventListener('change', function() {
-        const wrap = document.getElementById('specific-rides-wrap');
-        if (wrap) wrap.style.display = (this.value === 'specific') ? 'block' : 'none';
-    });
-});
-</script>
 </body>
 </html>

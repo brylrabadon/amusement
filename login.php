@@ -16,6 +16,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (($result['success'] ?? false) === true) {
         $user = $result['user'];
         flash_set('success', 'Login successful!');
+        // Honour ?next= redirect (e.g. from tickets.php checkout)
+        $next = trim((string)($_GET['next'] ?? $_POST['next'] ?? ''));
+        if ($next !== '' && !str_contains($next, '//') && !str_starts_with($next, 'http')) {
+            redirect($next);
+        }
         if (($user['role'] ?? '') === 'admin') redirect('admin/admin-dashboard.php');
         redirect('customer/dashboard.php');
     } else {
@@ -67,6 +72,8 @@ $flash = flash_get();
   <a class="logo" href="index.php">Amuse<span>Park</span></a>
   <ul>
     <li><a href="index.php">Home</a></li>
+    <li><a href="rides.php">Rides</a></li>
+    <li><a href="tickets.php">Tickets</a></li>
     <li><a href="contact.php">Contact</a></li>
     <li><a href="login.php" class="btn btn-yellow">Login</a></li>
   </ul>
@@ -106,6 +113,9 @@ $flash = flash_get();
       <?php endif; ?>
 
       <form method="post">
+        <?php if (!empty($_GET['next'])): ?>
+          <input type="hidden" name="next" value="<?= e($_GET['next']) ?>" />
+        <?php endif; ?>
         <div class="form-group" style="margin-bottom: 1.25rem;">
           <label style="display:block; margin-bottom: 0.5rem; font-weight: 600; color: #475569;">Email Address</label>
           <input type="email" name="email" placeholder="xxxx@email.com" required style="width:100%; padding: 0.75rem; border: 1px solid #e2e8f0; border-radius: 0.5rem;" />

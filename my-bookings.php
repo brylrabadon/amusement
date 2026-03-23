@@ -3,12 +3,24 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/lib/auth.php';
 
-$user = require_login('customer');
+$user = require_login(); // any logged-in role
 $pdo = db();
 
 $st = $pdo->prepare('SELECT * FROM bookings WHERE user_id = ? ORDER BY created_at DESC');
 $st->execute([(int)$user['id']]);
 $bookings = $st->fetchAll();
+
+// Fetch ticket counts per booking
+$ticketCounts = [];
+try {
+    $tcst = $pdo->prepare('SELECT booking_id, COUNT(*) as cnt FROM tickets WHERE booking_id IN (SELECT id FROM bookings WHERE user_id = ?) GROUP BY booking_id');
+    $tcst->execute([(int)$user['id']]);
+    foreach ($tcst->fetchAll() as $row) {
+        $ticketCounts[(int)$row['booking_id']] = (int)$row['cnt'];
+    }
+} catch (\Throwable $e) {
+    // tickets table may not exist yet
+}
 $flash = flash_get();
 $payColors = ['Paid' => 'badge-green', 'Pending' => 'badge-yellow', 'Cancelled' => 'badge-red', 'Refunded' => 'badge-blue'];
 ?>
@@ -64,6 +76,10 @@ $payColors = ['Paid' => 'badge-green', 'Pending' => 'badge-yellow', 'Cancelled' 
               <div style="font-weight:800;font-size:1.1rem;color:#1d4ed8;"><?= e($b['booking_reference'] ?? '') ?></div>
               <div style="color:#64748b;font-size:.9rem;margin-top:.25rem;"><?= e($b['ticket_type_name'] ?? '') ?> × <?= (int)($b['quantity'] ?? 1) ?></div>
               <div style="margin-top:.5rem;">Visit: <?= e((string)($b['visit_date'] ?? '')) ?></div>
+              <?php $tc = $ticketCounts[(int)$b['id']] ?? 0; ?>
+              <?php if ($tc > 0): ?>
+                <div style="font-size:.8rem;color:#7c3aed;margin-top:.3rem;">🎫 <?= $tc ?> ticket<?= $tc !== 1 ? 's' : '' ?> generated</div>
+              <?php endif; ?>
               <span class="badge <?= e($payColors[$pay] ?? 'badge-gray') ?>" style="margin-top:.5rem;"><?= e($pay) ?></span>
             </div>
             <div style="text-align:right;">

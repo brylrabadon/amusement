@@ -3,7 +3,7 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/lib/auth.php';
 
-$user = require_login('customer');
+$user = current_user();
 $pdo = db();
 
 $q = trim((string)($_GET['q'] ?? ''));
@@ -46,9 +46,14 @@ $cats = ['All','Thrill','Family','Kids','Water','Classic'];
   <ul>
     <li><a href="rides.php" class="active">Rides</a></li>
     <li><a href="tickets.php">Buy Tickets</a></li>
-    <li><a href="my-bookings.php">My Bookings</a></li>
-     <li><a href="profile.php">Profile</a></li>
-    <li><a href="logout.php" style="color:#dc2626;font-weight:600;">Logout</a></li>
+    <?php if ($user): ?>
+      <li><a href="my-bookings.php">My Bookings</a></li>
+      <li><a href="profile.php">Profile</a></li>
+      <li><a href="logout.php" style="color:#dc2626;font-weight:600;">Logout</a></li>
+    <?php else: ?>
+      <li><a href="login.php">Login</a></li>
+      <li><a href="register.php">Register</a></li>
+    <?php endif; ?>
   </ul>
 </nav>
 
