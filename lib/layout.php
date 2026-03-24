@@ -9,6 +9,7 @@
 
 function render_nav($user, string $active = ''): void {
     $isAdmin = ($user['role'] ?? '') === 'admin';
+    $isStaff = ($user['role'] ?? '') === 'staff';
     // Detect how many subfolder levels deep we are relative to the app root.
     // e.g. /amusement/index.php        → dir = /amusement   → strip app base → '' → depth 0
     //      /amusement/admin/rides.php  → dir = /amusement/admin → strip → admin → depth 1
@@ -43,8 +44,21 @@ function render_nav($user, string $active = ''): void {
     <li><a href="<?= $root ?>admin/rides.php"           <?= $active==='rides'    ?'class="active"':'' ?>>Rides</a></li>
     <li><a href="<?= $root ?>admin/bookings.php"        <?= $active==='bookings' ?'class="active"':'' ?>>Bookings</a></li>
     <li><a href="<?= $root ?>admin/ticket-types.php"    <?= $active==='tickets'  ?'class="active"':'' ?>>Ticket Types</a></li>
-    <li><a href="<?= $root ?>admin/scanner.php"         <?= $active==='scanner'  ?'class="active"':'' ?>>Scanner</a></li>
     <li><a href="<?= $root ?>profile.php"               <?= $active==='profile'  ?'class="active"':'' ?>>Profile</a></li>
+    <li><a href="<?= $root ?>logout.php" style="color:#f87171;font-weight:700;">Logout</a></li>
+  </ul>
+</nav>
+    <?php elseif ($isStaff): ?>
+<nav class="admin-nav staff-nav">
+  <a class="logo" href="<?= $root ?>index.php">
+    <img src="<?= $root ?>hero.png.jpg" alt="AmusePark" style="height:36px;width:36px;border-radius:50%;object-fit:cover;flex-shrink:0;">
+    Amuse<span>Park</span>
+  </a>
+  <ul>
+    <li><a href="<?= $root ?>staff/dashboard.php" <?= $active==='dashboard'?'class="active"':'' ?>>Dashboard</a></li>
+    <li><a href="<?= $root ?>staff/scanner.php"   <?= $active==='scanner'  ?'class="active"':'' ?>>🔍 Scanner</a></li>
+    <li><a href="<?= $root ?>staff/bookings.php"  <?= $active==='bookings' ?'class="active"':'' ?>>Bookings</a></li>
+    <li><a href="<?= $root ?>profile.php"         <?= $active==='profile'  ?'class="active"':'' ?>>Profile</a></li>
     <li><a href="<?= $root ?>logout.php" style="color:#f87171;font-weight:700;">Logout</a></li>
   </ul>
 </nav>
@@ -70,6 +84,23 @@ function render_nav($user, string $active = ''): void {
       <li><a href="<?= $root ?>register.php" <?= $active==='register' ?'class="active"':'' ?>>Register</a></li>
     <?php endif; ?>
     <li><a href="<?= $root ?>tickets.php" class="nav-cta <?= $active==='tickets'?'active':'' ?>">🎟 Buy Tickets</a></li>
+    <li>
+      <a href="<?= $root ?>cart.php" style="position:relative;display:inline-flex;align-items:center;gap:.35rem;" <?= $active==='cart'?'class="active"':'' ?>>
+        🛒
+        <?php
+          $cartCount = array_sum($_SESSION['cart'] ?? []);
+        ?>
+        <span id="cart-nav-badge" style="
+          display:<?= $cartCount > 0 ? 'inline-flex' : 'none' ?>;
+          align-items:center;justify-content:center;
+          background:#7c3aed;color:#fff;
+          font-size:.65rem;font-weight:800;
+          width:18px;height:18px;border-radius:50%;
+          position:absolute;top:-6px;right:-8px;
+          line-height:1;
+        "><?= $cartCount ?></span>
+      </a>
+    </li>
   </ul>
 </nav>
     <?php endif;

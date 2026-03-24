@@ -9,3 +9,10 @@ define('DB_NAME', 'amusepark');
 define('DB_USER', 'root');
 define('DB_PASS', ''); // your MySQL password (blank for default XAMPP)
 
+// PayMongo API Keys — get these from https://dashboard.paymongo.com/developers
+// Use TEST keys for development, LIVE keys for production
+define('PAYMONGO_SECRET_KEY', 'sk_test_XXXXXXXXXXXXXXXXXXXXXXXX');
+define('PAYMONGO_PUBLIC_KEY', 'pk_test_XXXXXXXXXXXXXXXXXXXXXXXX');
+// Webhook secret — from PayMongo dashboard → Webhooks
+define('PAYMONGO_WEBHOOK_SECRET', 'whsk_XXXXXXXXXXXXXXXXXXXXXXXX');
+

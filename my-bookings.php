@@ -3,22 +3,14 @@ declare(strict_types=1);
 require_once __DIR__ . '/lib/auth.php';
 require_once __DIR__ . '/lib/layout.php';
 
-<<<<<<< HEAD
 $user = require_login();
 $pdo  = db();
-=======
-$user = require_login(); // any logged-in role
-$pdo = db();
->>>>>>> 944246f7d1f7012ed1c7107d999e7fdfb8af41b5
 
 $st = $pdo->prepare('SELECT * FROM bookings WHERE user_id = ? ORDER BY created_at DESC');
 $st->execute([(int)$user['id']]);
 $bookings = $st->fetchAll();
 
-<<<<<<< HEAD
-=======
 // Fetch ticket counts per booking
->>>>>>> 944246f7d1f7012ed1c7107d999e7fdfb8af41b5
 $ticketCounts = [];
 try {
     $tcst = $pdo->prepare('SELECT booking_id, COUNT(*) as cnt FROM tickets WHERE booking_id IN (SELECT id FROM bookings WHERE user_id = ?) GROUP BY booking_id');
@@ -26,18 +18,10 @@ try {
     foreach ($tcst->fetchAll() as $row) {
         $ticketCounts[(int)$row['booking_id']] = (int)$row['cnt'];
     }
-<<<<<<< HEAD
 } catch (\Throwable $e) {}
 
 $flash    = flash_get();
 $payBadge = ['Paid'=>'badge-green','Pending'=>'badge-yellow','Cancelled'=>'badge-red','Refunded'=>'badge-blue'];
-=======
-} catch (\Throwable $e) {
-    // tickets table may not exist yet
-}
-$flash = flash_get();
-$payColors = ['Paid' => 'badge-green', 'Pending' => 'badge-yellow', 'Cancelled' => 'badge-red', 'Refunded' => 'badge-blue'];
->>>>>>> 944246f7d1f7012ed1c7107d999e7fdfb8af41b5
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -85,7 +69,6 @@ $payColors = ['Paid' => 'badge-green', 'Pending' => 'badge-yellow', 'Cancelled' 
         <div class="card booking-card">
           <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:1rem;">
             <div>
-<<<<<<< HEAD
               <div class="booking-ref"><?= e($b['booking_reference'] ?? '') ?></div>
               <div style="color:#6b7280;font-size:.9rem;margin-top:.2rem;">
                 <?= e($b['ticket_type_name'] ?? '') ?> × <?= (int)($b['quantity'] ?? 1) ?>
@@ -101,16 +84,6 @@ $payColors = ['Paid' => 'badge-green', 'Pending' => 'badge-yellow', 'Cancelled' 
               <div style="margin-top:.6rem;">
                 <span class="badge <?= e($payBadge[$pay] ?? 'badge-gray') ?>"><?= e($pay) ?></span>
               </div>
-=======
-              <div style="font-weight:800;font-size:1.1rem;color:#1d4ed8;"><?= e($b['booking_reference'] ?? '') ?></div>
-              <div style="color:#64748b;font-size:.9rem;margin-top:.25rem;"><?= e($b['ticket_type_name'] ?? '') ?> × <?= (int)($b['quantity'] ?? 1) ?></div>
-              <div style="margin-top:.5rem;">Visit: <?= e((string)($b['visit_date'] ?? '')) ?></div>
-              <?php $tc = $ticketCounts[(int)$b['id']] ?? 0; ?>
-              <?php if ($tc > 0): ?>
-                <div style="font-size:.8rem;color:#7c3aed;margin-top:.3rem;">🎫 <?= $tc ?> ticket<?= $tc !== 1 ? 's' : '' ?> generated</div>
-              <?php endif; ?>
-              <span class="badge <?= e($payColors[$pay] ?? 'badge-gray') ?>" style="margin-top:.5rem;"><?= e($pay) ?></span>
->>>>>>> 944246f7d1f7012ed1c7107d999e7fdfb8af41b5
             </div>
             <div style="text-align:right;flex-shrink:0;">
               <div style="font-size:1.4rem;font-weight:900;color:#111827;">

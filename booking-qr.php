@@ -86,11 +86,22 @@ $payStatus = (string)($b['payment_status'] ?? 'Pending');
     <div style="color:#64748b;font-size:.9rem;margin-bottom:.25rem;">Booking Reference</div>
     <div style="font-family:monospace;font-weight:800;font-size:1.25rem;color:#1d4ed8;margin-bottom:.5rem;"><?= e($b['booking_reference'] ?? '') ?></div>
     <div style="font-weight:700;font-size:1rem;margin-bottom:1rem;"><?= e($b['customer_name'] ?? '') ?></div>
+    <?php if (!empty($b['paymongo_intent_id'])): ?>
+      <div style="margin-bottom:1rem;">
+        <span style="background:#dcfce7;color:#16a34a;border-radius:999px;padding:.25rem .85rem;font-size:.78rem;font-weight:700;">✓ Paid via PayMongo QR Ph</span>
+      </div>
+    <?php endif; ?>
 
     <?php if (count($individualTickets) === 0): ?>
       <!-- Fallback: show booking-level QR if no individual tickets exist -->
+      <?php
+        $pmQrImage = (string)($b['paymongo_qr_image'] ?? '');
+        $fallbackQrSrc = $pmQrImage !== ''
+          ? $pmQrImage
+          : 'https://api.qrserver.com/v1/create-qr-code/?size=240x240&data=' . urlencode($qr);
+      ?>
       <img
-        src="https://api.qrserver.com/v1/create-qr-code/?size=240x240&data=<?= e(urlencode($qr)) ?>"
+        src="<?= e($fallbackQrSrc) ?>"
         style="width:240px;height:240px;border-radius:.75rem;border:4px solid #dbeafe;margin-bottom:1.25rem;"
         alt="Booking QR"
       />

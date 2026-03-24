@@ -21,6 +21,11 @@ defined('DB_NAME') || define('DB_NAME', (string)(getenv('AMUSEPARK_DB_NAME') ?: 
 defined('DB_USER') || define('DB_USER', (string)(getenv('AMUSEPARK_DB_USER') ?: 'root'));
 defined('DB_PASS') || define('DB_PASS', (string)(getenv('AMUSEPARK_DB_PASS') ?: ''));
 
+// PayMongo — override in config.local.php
+defined('PAYMONGO_SECRET_KEY')    || define('PAYMONGO_SECRET_KEY',    (string)(getenv('PAYMONGO_SECRET_KEY')    ?: ''));
+defined('PAYMONGO_PUBLIC_KEY')    || define('PAYMONGO_PUBLIC_KEY',     (string)(getenv('PAYMONGO_PUBLIC_KEY')    ?: ''));
+defined('PAYMONGO_WEBHOOK_SECRET')|| define('PAYMONGO_WEBHOOK_SECRET', (string)(getenv('PAYMONGO_WEBHOOK_SECRET')?: ''));
+
 function render_db_error_page(Throwable $e): never
 {
     http_response_code(500);

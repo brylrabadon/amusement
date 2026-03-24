@@ -5,37 +5,21 @@ require_once __DIR__ . '/lib/layout.php';
 
 $u = current_user();
 if ($u) {
-    $next = trim((string)($_GET['next'] ?? ''));
-    if ($next !== '' && !str_contains($next, '//') && !str_starts_with($next, 'http')) {
-        redirect($next);
-    }
     if (($u['role'] ?? '') === 'admin') redirect('admin/admin-dashboard.php');
-    redirect('index.php');
+    if (($u['role'] ?? '') === 'staff') redirect('staff/dashboard.php');
+    redirect('customer/dashboard.php');
 }
 
 $error = null;
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $result = auth_login($_POST['email'] ?? '', $_POST['password'] ?? '');
     if (($result['success'] ?? false) === true) {
-        $loggedUser = $result['user'];
-        flash_set('success', 'Login successful!');
-<<<<<<< HEAD
-=======
-        // Honour ?next= redirect (e.g. from tickets.php checkout)
->>>>>>> 944246f7d1f7012ed1c7107d999e7fdfb8af41b5
-        $next = trim((string)($_GET['next'] ?? $_POST['next'] ?? ''));
-        if ($next !== '' && !str_contains($next, '//') && !str_starts_with($next, 'http')) {
-            redirect($next);
-        }
-<<<<<<< HEAD
-        if (($loggedUser['role'] ?? '') === 'admin') redirect('admin/admin-dashboard.php');
-        redirect('index.php');
-=======
-        if (($user['role'] ?? '') === 'admin') redirect('admin/admin-dashboard.php');
+        $role = $result['user']['role'] ?? 'customer';
+        if ($role === 'admin') redirect('admin/admin-dashboard.php');
+        if ($role === 'staff') redirect('staff/dashboard.php');
         redirect('customer/dashboard.php');
->>>>>>> 944246f7d1f7012ed1c7107d999e7fdfb8af41b5
     } else {
-        $error = $result['message'] ?? 'Invalid email or password.';
+        $error = $result['message'] ?? 'Login failed.';
     }
 }
 $flash = flash_get();
@@ -43,108 +27,171 @@ $flash = flash_get();
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Login - AmusePark</title>
-  <link rel="stylesheet" href="css/style.css" />
   <style>
-    body { background: #f9fafb; }
-    .auth-split { display: grid; grid-template-columns: 1fr 1fr; min-height: calc(100vh - 108px); }
-    .auth-image { position: relative; overflow: hidden; background: url('AmusementPark_1.jpg') center/cover no-repeat; }
-    .auth-image::after { content:''; position:absolute; inset:0; background:linear-gradient(to top,rgba(0,0,0,.75) 0%,rgba(0,0,0,.2) 60%,transparent 100%); }
-    .auth-image-content { position:absolute; bottom:0; left:0; right:0; z-index:2; padding:3rem; }
-    .auth-image-tag { display:inline-block; background:#facc15; color:#000; border-radius:999px; padding:.3rem .9rem; font-size:.78rem; font-weight:800; margin-bottom:1rem; }
-    .auth-image-content h2 { font-size:2.8rem; font-weight:900; color:#fff; line-height:1.1; margin-bottom:.75rem; text-shadow:0 2px 12px rgba(0,0,0,.4); }
-    .auth-image-content p { color:rgba(255,255,255,.85); font-size:1rem; }
-    .auth-form-side { display:flex; align-items:center; justify-content:center; padding:2.5rem 2rem; background:#fff; }
-    .auth-box { width:100%; max-width:400px; }
-    .auth-box .brand { font-size:1.7rem; font-weight:900; color:#111827; text-decoration:none; display:block; text-align:center; margin-bottom:1.5rem; }
-    .auth-box .brand span { color:#facc15; }
-    .auth-box h2 { font-size:1.5rem; font-weight:900; color:#111827; text-align:center; margin-bottom:.3rem; }
-    .auth-box .sub { color:#6b7280; font-size:.9rem; text-align:center; margin-bottom:2rem; }
-    .auth-alert { padding:.85rem 1rem; border-radius:.6rem; margin-bottom:1.25rem; font-size:.9rem; font-weight:600; }
-    .auth-alert-error { background:#fee2e2; color:#991b1b; border:1px solid #fca5a5; }
-    .auth-alert-success { background:#dcfce7; color:#166534; border:1px solid #86efac; }
-    .auth-submit { width:100%; padding:.9rem; border-radius:999px; background:#7c3aed; color:#fff; font-weight:800; font-size:1rem; border:none; cursor:pointer; transition:background .2s; margin-top:.25rem; }
-    .auth-submit:hover { background:#6d28d9; }
-    .auth-link { color:#7c3aed; font-weight:700; text-decoration:none; }
-    .auth-link:hover { text-decoration:underline; }
-    @media (max-width:768px) { .auth-split { grid-template-columns:1fr; } .auth-image { display:none; } }
+    *, *::before, *::after { box-sizing: border-box; }
+    html, body { height: 100%; margin: 0; font-family: 'Segoe UI', system-ui, sans-serif; overflow: hidden; }
+
+    /* ── Split layout ── */
+    .auth-wrap {
+      display: flex;
+      height: 100vh;
+      width: 100vw;
+    }
+
+    /* LEFT — video panel */
+    .auth-video-panel {
+      flex: 1;
+      position: relative;
+      overflow: hidden;
+    }
+    .auth-video-panel video {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      object-position: center;
+    }
+    .auth-video-overlay {
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(135deg, rgba(10,6,24,.55) 0%, rgba(60,20,120,.35) 60%, rgba(10,6,24,.45) 100%);
+    }
+    .auth-video-brand {
+      position: absolute;
+      bottom: 2.5rem;
+      left: 2.5rem;
+      z-index: 2;
+      color: #fff;
+    }
+    .auth-video-brand h2 {
+      font-size: 2rem;
+      font-weight: 900;
+      margin: 0 0 .4rem;
+      text-shadow: 0 2px 12px rgba(0,0,0,.5);
+    }
+    .auth-video-brand p {
+      font-size: .95rem;
+      color: rgba(255,255,255,.75);
+      margin: 0;
+      text-shadow: 0 1px 6px rgba(0,0,0,.4);
+    }
+
+    /* RIGHT — form panel */
+    .auth-form-panel {
+      width: 460px;
+      flex-shrink: 0;
+      background: #fff;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      padding: 3rem 3rem;
+      overflow-y: auto;
+    }
+
+    .auth-logo { display: flex; align-items: center; gap: .55rem; text-decoration: none; margin-bottom: 2rem; }
+    .auth-logo img { height: 40px; width: 40px; border-radius: 50%; object-fit: cover; }
+    .auth-logo-text { font-size: 1.5rem; font-weight: 900; color: #0f0a1e; }
+    .auth-logo-text span { color: #f59e0b; }
+
+    .auth-form-panel h1 { font-size: 1.9rem; font-weight: 900; color: #0f0a1e; margin: 0 0 .3rem; }
+    .auth-sub { color: #6b7280; font-size: .9rem; margin: 0 0 1.75rem; }
+
+    .auth-alert { padding: .85rem 1rem; border-radius: .65rem; margin-bottom: 1rem; font-size: .88rem; font-weight: 600; }
+    .auth-alert-error   { background: #fee2e2; color: #991b1b; border: 1px solid #fca5a5; }
+    .auth-alert-success { background: #dcfce7; color: #166534; border: 1px solid #86efac; }
+
+    .auth-field { margin-bottom: 1rem; }
+    .auth-field label { display: block; font-size: .82rem; font-weight: 700; color: #374151; margin-bottom: .4rem; }
+    .auth-field input {
+      width: 100%; padding: .78rem 1rem; border: 1.5px solid #e5e7eb; border-radius: .75rem;
+      font-size: .92rem; color: #111827; background: #f9fafb;
+      transition: border-color .2s, box-shadow .2s; outline: none;
+    }
+    .auth-field input:focus { border-color: #7c3aed; box-shadow: 0 0 0 3px rgba(124,58,237,.12); background: #fff; }
+
+    .auth-forgot { display: block; text-align: right; font-size: .8rem; color: #7c3aed; font-weight: 700; text-decoration: none; margin-top: -.5rem; margin-bottom: 1rem; }
+    .auth-forgot:hover { text-decoration: underline; }
+
+    .auth-link { color: #7c3aed; font-weight: 700; text-decoration: none; }
+    .auth-link:hover { text-decoration: underline; }
+
+    .auth-submit {
+      width: 100%; padding: .95rem; border-radius: 999px;
+      background: #7c3aed; color: #fff; font-weight: 800; font-size: 1rem;
+      border: none; cursor: pointer; transition: background .2s, transform .15s;
+      margin-top: .25rem;
+    }
+    .auth-submit:hover { background: #6d28d9; transform: translateY(-1px); }
+
+    .auth-divider { display: flex; align-items: center; gap: .75rem; margin: 1.5rem 0; color: #d1d5db; font-size: .8rem; }
+    .auth-divider::before, .auth-divider::after { content: ''; flex: 1; height: 1px; background: #e5e7eb; }
+
+    .auth-footer { text-align: center; font-size: .9rem; color: #6b7280; }
+    .auth-back { display: block; text-align: center; margin-top: .75rem; font-size: .82rem; color: #9ca3af; text-decoration: none; }
+    .auth-back:hover { color: #6b7280; }
+
+    /* Mobile: stack vertically */
+    @media (max-width: 768px) {
+      html, body { overflow: auto; }
+      .auth-wrap { flex-direction: column; height: auto; }
+      .auth-video-panel { height: 240px; flex: none; }
+      .auth-form-panel { width: 100%; padding: 2.5rem 1.5rem; }
+    }
   </style>
 </head>
 <body>
-<<<<<<< HEAD
-<?php render_nav(null, 'login'); ?>
-<div class="auth-split">
-  <div class="auth-image">
-    <div class="auth-image-content">
-      <div class="auth-image-tag">⭐ Philippines' #1 Amusement Park</div>
-      <h2>READY FOR<br>THE THRILL?</h2>
-      <p>Experience the magic of AmusePark.</p>
-=======
+<div class="auth-wrap">
 
-<nav>
-  <a class="logo" href="index.php">Amuse<span>Park</span></a>
-  <ul>
-    <li><a href="index.php">Home</a></li>
-    <li><a href="rides.php">Rides</a></li>
-    <li><a href="tickets.php">Tickets</a></li>
-    <li><a href="contact.php">Contact</a></li>
-    <li><a href="login.php" class="btn btn-yellow">Login</a></li>
-  </ul>
-</nav>
-
-<div class="auth-page">
-  <div class="auth-left">
-    <img src="https://images.unsplash.com/photo-1513889961551-628c1e5e2ee9?q=80&w=2070" alt="AmusePark Adventure" />
-    
-    <div class="auth-left-overlay">
-      <div class="hero-tag" style="margin-bottom:1.5rem; background: #fbbf24; color: #000; padding: 0.4rem 1rem; border-radius: 2rem; display: inline-block; width: fit-content; font-weight: 700; font-size: 0.8rem;">⭐ Philippines' #1 Amusement Park</div>
-      <h2 style="font-size:3rem; font-weight:900; line-height:1.1; margin-bottom:1rem; color: #fff;">
-        READY FOR THE<br/>THRILL?
-      </h2>
-      <p style="color:rgba(255,255,255,0.9); font-size:1.1rem; margin-bottom: 2rem;">Experience the magic of AmusePark.</p>
->>>>>>> 944246f7d1f7012ed1c7107d999e7fdfb8af41b5
+  <!-- LEFT: video -->
+  <div class="auth-video-panel">
+    <video autoplay muted loop playsinline>
+      <source src="aww.mp4" type="video/mp4"/>
+    </video>
+    <div class="auth-video-overlay"></div>
+    <div class="auth-video-brand">
+      <h2>Welcome to AmusePark</h2>
+      <p>Thrilling rides &amp; unforgettable memories await.</p>
     </div>
   </div>
-  <div class="auth-form-side">
-    <div class="auth-box">
-      <a class="brand" href="index.php">Amuse<span>Park</span></a>
-      <h2>Welcome Back!</h2>
-      <p class="sub">Log in to manage your bookings</p>
-      <?php if ($flash && ($flash['type'] ?? '') === 'success'): ?>
-        <div class="auth-alert auth-alert-success"><?= e($flash['message'] ?? '') ?></div>
-      <?php endif; ?>
-      <?php if ($error || ($flash && ($flash['type'] ?? '') === 'error')): ?>
-        <div class="auth-alert auth-alert-error"><?= e($error ?: ($flash['message'] ?? '')) ?></div>
-      <?php endif; ?>
-      <form method="post">
-        <?php if (!empty($_GET['next'])): ?>
-          <input type="hidden" name="next" value="<?= e($_GET['next']) ?>" />
-        <?php endif; ?>
-<<<<<<< HEAD
-        <div class="form-group"><label>Email Address</label><input type="email" name="email" placeholder="juan@email.com" required /></div>
-        <div class="form-group"><label>Password</label><input type="password" name="password" placeholder="Enter your password" required /></div>
-        <button type="submit" class="auth-submit">Log In</button>
-=======
-        <div class="form-group" style="margin-bottom: 1.25rem;">
-          <label style="display:block; margin-bottom: 0.5rem; font-weight: 600; color: #475569;">Email Address</label>
-          <input type="email" name="email" placeholder="xxxx@email.com" required style="width:100%; padding: 0.75rem; border: 1px solid #e2e8f0; border-radius: 0.5rem;" />
-        </div>
-        <div class="form-group" style="margin-bottom: 1.5rem;">
-          <label style="display:block; margin-bottom: 0.5rem; font-weight: 600; color: #475569;">Password</label>
-          <input type="password" name="password" placeholder="Enter your password" required style="width:100%; padding: 0.75rem; border: 1px solid #e2e8f0; border-radius: 0.5rem;" />
-        </div>
-        <button type="submit" class="btn btn-primary btn-full" style="font-size:1rem; padding:.85rem; width: 100%; background: #1d4ed8; color: #fff; border: none; border-radius: 0.5rem; cursor: pointer; font-weight: 700;">
-          Log In
-        </button>
->>>>>>> 944246f7d1f7012ed1c7107d999e7fdfb8af41b5
-      </form>
-      <p style="text-align:center;margin-top:1.5rem;font-size:.9rem;color:#6b7280;">
-        Don't have an account? <a href="register.php" class="auth-link">Sign Up</a>
-      </p>
-    </div>
+
+  <!-- RIGHT: form -->
+  <div class="auth-form-panel">
+    <a class="auth-logo" href="index.php">
+      <img src="hero.png.jpg" alt="AmusePark"/>
+      <span class="auth-logo-text">Amuse<span>Park</span></span>
+    </a>
+    <h1>Welcome back</h1>
+    <p class="auth-sub">Log in to manage your bookings and tickets</p>
+
+    <?php if ($flash && ($flash['type'] ?? '') === 'success'): ?>
+      <div class="auth-alert auth-alert-success">&#10003; <?= e($flash['message'] ?? '') ?></div>
+    <?php endif; ?>
+    <?php if ($error): ?>
+      <div class="auth-alert auth-alert-error">&#9888; <?= e($error) ?></div>
+    <?php endif; ?>
+
+    <form method="post">
+      <div class="auth-field">
+        <label>Email Address</label>
+        <input type="email" name="email" placeholder="juan@email.com" required autocomplete="email"/>
+      </div>
+      <div class="auth-field">
+        <label>Password</label>
+        <input type="password" name="password" placeholder="Your password" required autocomplete="current-password"/>
+      </div>
+      <a href="#" class="auth-forgot">Forgot password?</a>
+      <button type="submit" class="auth-submit">Log In</button>
+    </form>
+
+    <div class="auth-divider">or</div>
+    <p class="auth-footer">Don't have an account? <a href="register.php" class="auth-link">Sign Up</a></p>
+    <a href="index.php" class="auth-back">Back to Home</a>
   </div>
+
 </div>
-<?php render_footer(); ?>
 </body>
 </html>

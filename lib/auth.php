@@ -28,6 +28,20 @@ function require_admin(): array
     return require_login('admin');
 }
 
+function require_staff(): array
+{
+    $u = current_user();
+    if (!$u) {
+        flash_set('error', 'Please log in first.');
+        redirect('login.php');
+    }
+    if (!in_array($u['role'] ?? '', ['admin', 'staff'], true)) {
+        flash_set('error', 'You are not allowed to access that page.');
+        redirect('index.php');
+    }
+    return $u;
+}
+
 function is_sha256_hex(string $hash): bool
 {
     return (bool)preg_match('/^[a-f0-9]{64}$/i', $hash);

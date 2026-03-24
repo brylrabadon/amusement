@@ -236,3 +236,18 @@ tr:hover td { background: #faf5ff; }
 .ticket-option .ticket-total-row {
   min-height: 2.5rem;
 }
+
+/* STAFF NAV — teal/green accent to distinguish from admin */
+.staff-nav { background: #0f4c3a; }
+.staff-nav .logo { color: #fff; }
+.staff-nav ul a { color: #6ee7b7; }
+.staff-nav ul a:hover, .staff-nav ul a.active { background: rgba(255,255,255,.12); color: #fff; }
+
+/* Ride selection cards (tickets step 1) */
+.ride-checkbox-card { user-select: none; }
+.ride-checkbox-card:hover:not(.ride-disabled) {
+  border-color: #c4b5fd !important;
+  background: #faf5ff !important;
+  box-shadow: 0 4px 16px rgba(124,58,237,.1);
+}
+.ride-disabled { pointer-events: none; }

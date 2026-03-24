@@ -2,6 +2,7 @@
 declare(strict_types=1);
 
 require_once __DIR__ . '/../lib/auth.php';
+require_once __DIR__ . '/../lib/layout.php';
 
 $user = require_admin();
 $pdo = db();
@@ -68,18 +69,7 @@ $payColors = ['Paid' => 'badge-green', 'Pending' => 'badge-yellow', 'Cancelled' 
   <link rel="stylesheet" href="../css/style.css" />
 </head>
 <body>
-<nav class="admin-nav">
-  <a class="logo" href="../index.php">Amuse<span>Park</span></a>
-  <ul>
-    <li><a href="admin-dashboard.php">Dashboard</a></li>
-    <li><a href="rides.php">Rides</a></li>
-    <li><a href="bookings.php" class="active">Bookings</a></li>
-    <li><a href="ticket-types.php">Ticket Types</a></li>
-    <li><a href="scanner.php">Scanner</a></li>
-    <li><a href="../profile.php">Profile</a></li>
-    <li><a href="../logout.php" style="color:#dc2626;font-weight:600;">Logout</a></li>
-  </ul>
-</nav>
+<?php render_nav($user, 'bookings'); ?>
 
 
 <div class="page-header"><h1>Bookings Management</h1><p>View and manage all ticket bookings</p></div>

@@ -3,320 +3,447 @@ declare(strict_types=1);
 require_once __DIR__ . '/lib/auth.php';
 require_once __DIR__ . '/lib/layout.php';
 $user = current_user();
+$pdo  = db();
+
 $maintenanceNames = [];
+$featuredRides    = [];
+$ticketTypes      = [];
+
 try {
-    $pdo = db();
-    $rows = $pdo->query("SELECT name FROM rides WHERE status = 'Maintenance' ORDER BY created_at DESC")->fetchAll();
-    foreach ($rows as $r) {
-        if (!empty($r['name'])) $maintenanceNames[] = (string)$r['name'];
-    }
+    $rows = $pdo->query("SELECT name FROM rides WHERE status='Maintenance' ORDER BY created_at DESC")->fetchAll();
+    foreach ($rows as $r) { if (!empty($r['name'])) $maintenanceNames[] = (string)$r['name']; }
+    $featuredRides = $pdo->query("SELECT * FROM rides WHERE status='Open' ORDER BY is_featured DESC, id ASC LIMIT 6")->fetchAll();
+    $ticketTypes   = $pdo->query("SELECT * FROM ticket_types WHERE is_active=1 ORDER BY price ASC")->fetchAll();
 } catch (Throwable $e) {}
 ?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>AmusePark - Ride the Fun</title>
-  <link rel="stylesheet" href="css/style.css" />
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>AmusePark — Where Magic Meets Adventure</title>
+  <link rel="stylesheet" href="css/style.css"/>
   <style>
-    /* ── Index-page overrides ── */
-    body { background: #fff; }
-
-    /* Top info bar */
-    .top-bar {
-      background: #7c3aed;
-      color: #fff;
-      text-align: right;
-      padding: .45rem 2rem;
-      font-size: .82rem;
-      font-weight: 600;
-      letter-spacing: .02em;
+    *, *::before, *::after { box-sizing: border-box; }
+    :root {
+      --purple: #7c3aed; --purple-dark: #5b21b6;
+      --gold: #f59e0b;
+      --dark: #0f0a1e;
     }
-    .top-bar span { background: #facc15; color: #000; border-radius: 999px; padding: .2rem .85rem; margin-left: .75rem; font-weight: 700; }
+    html { scroll-behavior: smooth; }
+    body { background: #fff; color: #1e1b4b; font-family: 'Segoe UI', system-ui, sans-serif; margin: 0; overflow-x: hidden; }
 
-    /* Nav logo */
-    .site-nav .logo img, .admin-nav .logo img { display:inline-block; }
-    .site-nav .logo { display:flex; align-items:center; font-size:1.4rem; font-weight:900; text-decoration:none; color:#111827; gap:.35rem; }
-    .site-nav .logo span { color:#facc15; }
-    .home-hero {
-      position: relative;
-      min-height: 82vh;
-      display: flex; align-items: flex-end;
+    /* ── TOPBAR ── */
+    .ap-topbar {
+      background: var(--dark); color: rgba(255,255,255,.7);
+      text-align: center; padding: .45rem 1rem; font-size: .78rem; font-weight: 600; letter-spacing: .04em;
+    }
+    .ap-topbar a { color: var(--gold); text-decoration: none; font-weight: 700; margin-left: .4rem; }
+
+    /* ── HERO ── */
+    .ap-hero {
+      position: relative; min-height: 100vh;
+      display: flex; align-items: center;
+      overflow: hidden; background: var(--dark);
+    }
+    .ap-hero-bg {
+      position: absolute; inset: 0; z-index: 0;
       overflow: hidden;
-      background: #000;
     }
-    .home-hero video {
-      position: absolute; inset: 0;
-      width: 100%; height: 100%;
-      object-fit: cover;
-      opacity: .75;
-      z-index: 0;
+    .ap-hero-bg video {
+      width: 100%; height: 100%; object-fit: cover; opacity: .5;
     }
-    .home-hero::after {
-      content: '';
-      position: absolute; inset: 0;
-      background: linear-gradient(to top, rgba(0,0,0,.78) 0%, rgba(0,0,0,.2) 55%, transparent 100%);
-      z-index: 1;
+    .ap-hero-overlay {
+      position: absolute; inset: 0; z-index: 1;
+      background: linear-gradient(135deg, rgba(15,10,30,.9) 0%, rgba(91,33,182,.4) 60%, transparent 100%);
     }
-    .home-hero-content {
+    .ap-hero-content {
       position: relative; z-index: 2;
-      width: 100%; padding: 4rem 3rem 4.5rem;
-      max-width: 780px;
+      max-width: 700px; padding: 0 2.5rem;
     }
-    .home-hero-tag {
+    .ap-hero-badge {
       display: inline-flex; align-items: center; gap: .5rem;
-      background: #facc15; color: #000;
-      border-radius: 999px; padding: .35rem 1.1rem;
-      font-size: .82rem; font-weight: 800;
-      margin-bottom: 1.25rem; letter-spacing: .03em;
+      background: rgba(245,158,11,.15); border: 1px solid rgba(245,158,11,.4);
+      color: var(--gold); border-radius: 999px;
+      padding: .4rem 1rem; font-size: .8rem; font-weight: 700;
+      margin-bottom: 1.5rem; letter-spacing: .04em;
     }
-    .home-hero h1 {
-      font-size: clamp(2.4rem, 5.5vw, 4rem);
-      font-weight: 900; color: #fff;
-      line-height: 1.1; margin-bottom: 1rem;
-      text-shadow: 0 2px 12px rgba(0,0,0,.4);
+    .ap-hero h1 {
+      font-size: clamp(2.8rem, 7vw, 5.5rem);
+      font-weight: 900; color: #fff; line-height: 1.05;
+      letter-spacing: -.03em; margin: 0 0 1.25rem;
     }
-    .home-hero h1 em { font-style: normal; color: #facc15; }
-    .home-hero p {
-      color: #e2e8f0; font-size: 1.1rem;
-      margin-bottom: 2rem; max-width: 520px; line-height: 1.65;
+    .ap-hero h1 span { color: var(--gold); }
+    .ap-hero p {
+      color: rgba(255,255,255,.75); font-size: 1.15rem;
+      line-height: 1.65; margin: 0 0 2.25rem; max-width: 520px;
     }
-    .home-hero-btns { display: flex; gap: 1rem; flex-wrap: wrap; }
-    .hero-btn-primary {
-      background: #facc15; color: #000;
-      font-weight: 800; font-size: 1rem;
-      padding: .85rem 2.25rem; border-radius: 999px;
-      text-decoration: none; transition: background .2s, transform .15s;
-      display: inline-flex; align-items: center; gap: .5rem;
+    .ap-hero-btns { display: flex; gap: 1rem; flex-wrap: wrap; }
+    .ap-btn-gold {
+      background: var(--gold); color: #000; font-weight: 800;
+      padding: .9rem 2.25rem; border-radius: 999px; font-size: 1rem;
+      text-decoration: none; transition: all .2s; display: inline-flex; align-items: center; gap: .5rem;
     }
-    .hero-btn-primary:hover { background: #fbbf24; transform: translateY(-2px); }
-    .hero-btn-outline {
-      background: transparent; color: #fff;
-      border: 2px solid rgba(255,255,255,.7);
-      font-weight: 700; font-size: 1rem;
-      padding: .85rem 2.25rem; border-radius: 999px;
-      text-decoration: none; transition: all .2s;
-      display: inline-flex; align-items: center; gap: .5rem;
+    .ap-btn-gold:hover { background: #d97706; transform: translateY(-2px); }
+    .ap-btn-outline {
+      background: transparent; color: #fff; font-weight: 700;
+      padding: .9rem 2.25rem; border-radius: 999px; font-size: 1rem;
+      border: 2px solid rgba(255,255,255,.35); text-decoration: none;
+      transition: all .2s; display: inline-flex; align-items: center; gap: .5rem;
     }
-    .hero-btn-outline:hover { background: rgba(255,255,255,.15); border-color: #fff; }
+    .ap-btn-outline:hover { border-color: #fff; background: rgba(255,255,255,.08); }
 
-    /* Stats bar */
-    .stats-bar {
-      background: linear-gradient(90deg, #7c3aed 0%, #a855f7 50%, #ec4899 100%);
-      padding: 2.25rem 1.5rem;
+    /* Hero stats strip */
+    .ap-hero-stats {
+      position: absolute; bottom: 0; left: 0; right: 0; z-index: 2;
+      display: flex; justify-content: center; gap: 0;
+      background: rgba(15,10,30,.75); backdrop-filter: blur(12px);
+      border-top: 1px solid rgba(255,255,255,.08);
     }
-    .stats-bar-inner {
-      max-width: 1000px; margin: 0 auto;
-      display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-      gap: 1.5rem; text-align: center;
+    .ap-hero-stat {
+      flex: 1; max-width: 220px; text-align: center;
+      padding: 1.25rem 1rem; border-right: 1px solid rgba(255,255,255,.08);
     }
-    .stats-bar-item .num { font-size: 2.4rem; font-weight: 900; color: #fff; line-height: 1; }
-    .stats-bar-item .lbl { font-size: .85rem; color: rgba(255,255,255,.8); font-weight: 600; margin-top: .3rem; }
+    .ap-hero-stat:last-child { border-right: none; }
+    .ap-hero-stat-val { font-size: 1.8rem; font-weight: 900; color: var(--gold); line-height: 1; }
+    .ap-hero-stat-lbl { font-size: .75rem; color: rgba(255,255,255,.55); font-weight: 600; margin-top: .3rem; text-transform: uppercase; letter-spacing: .05em; }
 
-    /* Why book section */
-    .why-section { background: #fafafa; padding: 5.5rem 1.5rem; }
-    .section-label {
-      display: inline-block; background: #f3e8ff; color: #7c3aed;
-      border-radius: 999px; padding: .3rem 1rem;
-      font-size: .8rem; font-weight: 700; letter-spacing: .06em;
-      text-transform: uppercase; margin-bottom: .75rem;
+    /* ── MAINTENANCE BANNER ── */
+    .ap-maintenance {
+      background: #fef3c7; border-bottom: 2px solid #fcd34d;
+      padding: .75rem 2rem; text-align: center;
+      font-size: .88rem; font-weight: 600; color: #92400e;
     }
-    .section-title { font-size: 2.2rem; font-weight: 900; color: #111827; margin-bottom: .5rem; }
-    .section-sub { color: #6b7280; font-size: 1rem; margin-bottom: 3rem; }
-    .why-grid {
-      max-width: 1000px; margin: 0 auto;
-      display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
-      gap: 1.5rem;
+
+    /* ── SECTION WRAPPER ── */
+    .ap-section { padding: 5rem 2rem; }
+    .ap-section-inner { max-width: 1200px; margin: 0 auto; }
+    .ap-section-label {
+      display: inline-block; background: #ede9fe; color: var(--purple);
+      border-radius: 999px; padding: .3rem .9rem; font-size: .78rem;
+      font-weight: 700; letter-spacing: .06em; text-transform: uppercase; margin-bottom: .85rem;
     }
-    .why-card {
-      background: #fff; border-radius: 1.25rem;
-      padding: 2rem 1.5rem; text-align: center;
-      box-shadow: 0 2px 12px rgba(0,0,0,.06);
-      border: 1.5px solid #f3f4f6;
-      transition: box-shadow .2s, transform .2s;
+    .ap-section-title {
+      font-size: clamp(1.8rem, 4vw, 2.75rem); font-weight: 900;
+      color: #0f0a1e; line-height: 1.15; margin: 0 0 .75rem;
     }
-    .why-card:hover { box-shadow: 0 8px 28px rgba(124,58,237,.12); transform: translateY(-4px); }
-    .why-icon {
+    .ap-section-sub { color: #6b7280; font-size: 1rem; max-width: 520px; line-height: 1.6; margin: 0 0 3rem; }
+
+    /* ── RIDES GRID ── */
+    .ap-rides-grid {
+      display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 1.5rem;
+    }
+    .ap-ride-card {
+      border-radius: 1.25rem; overflow: hidden;
+      border: 1px solid #e5e7eb; background: #fff;
+      transition: transform .25s, box-shadow .25s;
+    }
+    .ap-ride-card:hover { transform: translateY(-6px); box-shadow: 0 20px 40px rgba(124,58,237,.12); }
+    .ap-ride-img {
+      width: 100%; height: 200px; object-fit: cover; display: block;
+      background: #ede9fe;
+    }
+    .ap-ride-img-placeholder {
+      width: 100%; height: 200px; background: linear-gradient(135deg,#ede9fe,#ddd6fe);
+      display: flex; align-items: center; justify-content: center; font-size: 3.5rem;
+    }
+    .ap-ride-body { padding: 1.25rem 1.5rem; }
+    .ap-ride-name { font-size: 1.1rem; font-weight: 800; color: #0f0a1e; margin: 0 0 .35rem; }
+    .ap-ride-desc { font-size: .85rem; color: #6b7280; line-height: 1.5; margin: 0 0 .85rem; }
+    .ap-ride-meta { display: flex; gap: .5rem; flex-wrap: wrap; }
+    .ap-ride-tag {
+      font-size: .72rem; font-weight: 700; padding: .2rem .6rem; border-radius: .4rem;
+    }
+    .tag-thrill  { background: #fee2e2; color: #dc2626; }
+    .tag-family  { background: #dcfce7; color: #16a34a; }
+    .tag-kids    { background: #ede9fe; color: #7c3aed; }
+    .tag-water   { background: #dbeafe; color: #1d4ed8; }
+    .tag-classic { background: #f1f5f9; color: #475569; }
+
+    /* ── TICKETS SECTION ── */
+    .ap-tickets-section { background: #0f0a1e; }
+    .ap-tickets-section .ap-section-label { background: rgba(245,158,11,.15); color: var(--gold); }
+    .ap-tickets-section .ap-section-title { color: #fff; }
+    .ap-tickets-section .ap-section-sub   { color: rgba(255,255,255,.55); }
+
+    .ap-ticket-grid {
+      display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 1.5rem;
+    }
+    .ap-ticket-card {
+      background: rgba(255,255,255,.06); border: 1px solid rgba(255,255,255,.1);
+      border-radius: 1.25rem; padding: 2rem 1.75rem;
+      transition: border-color .2s, transform .2s;
+      display: flex; flex-direction: column;
+    }
+    .ap-ticket-card:hover { border-color: var(--gold); transform: translateY(-4px); }
+    .ap-ticket-name { font-size: 1.2rem; font-weight: 800; color: #fff; margin: 0 0 .4rem; }
+    .ap-ticket-desc { font-size: .85rem; color: rgba(255,255,255,.55); line-height: 1.5; margin: 0 0 1.25rem; }
+    .ap-ticket-rides { font-size: .82rem; color: var(--gold); font-weight: 700; margin-bottom: 1.5rem; }
+    .ap-ticket-price { font-size: 2.5rem; font-weight: 900; color: var(--gold); line-height: 1; margin-bottom: 1.5rem; }
+    .ap-ticket-price span { font-size: .9rem; color: rgba(255,255,255,.45); font-weight: 500; }
+    .ap-ticket-btn {
+      display: block; text-align: center; background: var(--gold); color: #000;
+      font-weight: 800; padding: .8rem; border-radius: 999px; text-decoration: none;
+      font-size: .9rem; transition: background .2s; margin-top: auto;
+    }
+    .ap-ticket-btn:hover { background: #d97706; }
+
+    /* ── WHY US ── */
+    .ap-why-grid {
+      display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 2rem;
+    }
+    .ap-why-card { text-align: center; }
+    .ap-why-icon {
       width: 64px; height: 64px; border-radius: 1rem;
-      display: flex; align-items: center; justify-content: center;
-      font-size: 1.75rem; margin: 0 auto 1.1rem;
+      background: #ede9fe; display: flex; align-items: center; justify-content: center;
+      font-size: 1.75rem; margin: 0 auto 1rem;
     }
-    .why-card h3 { font-size: 1rem; font-weight: 800; color: #111827; margin-bottom: .4rem; }
-    .why-card p { color: #6b7280; font-size: .88rem; line-height: 1.55; }
+    .ap-why-title { font-size: 1rem; font-weight: 800; color: #0f0a1e; margin: 0 0 .4rem; }
+    .ap-why-desc  { font-size: .88rem; color: #6b7280; line-height: 1.55; margin: 0; }
 
-    /* About section */
-    .about-section {
-      background: #fff; padding: 5.5rem 1.5rem;
-    }
-    .about-inner {
-      max-width: 1100px; margin: 0 auto;
-      display: grid; grid-template-columns: 1fr 1fr;
-      gap: 4rem; align-items: center;
-    }
-    .about-text h2 { font-size: 2.2rem; font-weight: 900; color: #111827; margin-bottom: 1.25rem; line-height: 1.2; }
-    .about-text p { color: #6b7280; line-height: 1.75; margin-bottom: 1rem; font-size: .97rem; }
-    .about-info-box {
-      background: #faf5ff; border-left: 4px solid #7c3aed;
-      border-radius: .5rem; padding: 1.25rem 1.5rem; margin-top: 1.5rem;
-    }
-    .about-info-box p { color: #374151; margin: 0; font-size: .92rem; }
-    .about-info-box p + p { margin-top: .5rem; }
-    .about-img-wrap { border-radius: 1.5rem; overflow: hidden; box-shadow: 0 16px 48px rgba(0,0,0,.12); }
-    .about-img-wrap img { width: 100%; display: block; }
-
-    /* CTA section */
-    .cta-section {
+    /* ── CTA BANNER ── */
+    .ap-cta {
       background: linear-gradient(135deg, #7c3aed 0%, #a855f7 50%, #ec4899 100%);
-      padding: 6rem 1.5rem; text-align: center;
+      padding: 5rem 2rem; text-align: center;
     }
-    .cta-section h2 { font-size: 2.5rem; font-weight: 900; color: #fff; margin-bottom: .75rem; }
-    .cta-section p { color: rgba(255,255,255,.85); font-size: 1.1rem; margin-bottom: 2.5rem; }
-    .cta-btn {
-      background: #facc15; color: #000;
-      font-weight: 900; font-size: 1.1rem;
-      padding: 1rem 3rem; border-radius: 999px;
-      text-decoration: none; display: inline-block;
-      transition: background .2s, transform .15s;
+    .ap-cta h2 { font-size: clamp(2rem, 5vw, 3.5rem); font-weight: 900; color: #fff; margin: 0 0 1rem; }
+    .ap-cta p  { color: rgba(255,255,255,.8); font-size: 1.1rem; margin: 0 0 2.5rem; }
+
+    /* ── FOOTER ── */
+    .ap-footer {
+      background: #0f0a1e; color: rgba(255,255,255,.5);
+      text-align: center; padding: 2.5rem 1rem; font-size: .85rem;
     }
-    .cta-btn:hover { background: #fbbf24; transform: translateY(-2px); }
+    .ap-footer a { color: rgba(255,255,255,.6); text-decoration: none; margin: 0 .75rem; }
+    .ap-footer a:hover { color: #fff; }
 
-    /* Footer */
-    .home-footer {
-      background: #111827; color: #9ca3af;
-      padding: 3.5rem 2rem; text-align: center;
-    }
-    .home-footer .footer-logo { font-size: 1.6rem; font-weight: 900; color: #fff; margin-bottom: .75rem; }
-    .home-footer .footer-logo span { color: #facc15; }
-    .home-footer p { font-size: .88rem; }
-
-    /* Maintenance banner */
-    .maintenance-bar { background: #fef3c7; border-top: 2px solid #fcd34d; padding: .85rem 1.5rem; text-align: center; color: #92400e; font-size: .9rem; }
-
-    @media (max-width: 768px) {
-      .about-inner { grid-template-columns: 1fr; gap: 2rem; }
-      .home-hero-content { padding: 2.5rem 1.5rem 3rem; }
-      .top-bar { text-align: center; }
+    @media (max-width: 640px) {
+      .ap-hero-stats { display: none; }
+      .ap-hero-content { padding: 0 1.25rem; }
+      .ap-section { padding: 3.5rem 1.25rem; }
     }
   </style>
 </head>
 <body>
 
-<<<<<<< HEAD
-<!-- Top info bar + Nav (shared) -->
-<?php
-// Homepage always shows the public/customer nav — even for admins
-$navUser = $user ? array_merge($user, ['role' => 'customer']) : null;
-render_nav($navUser, 'home');
-?>
-=======
-<nav>
-  <a class="logo" href="index.php">Amuse<span>Park</span></a>
-  <ul>
-    <li><a href="index.php" class="active">Home</a></li>
-    <li><a href="tickets.php">Tickets</a></li>
-    <li><a href="rides.php">Rides</a></li>
-    <li><a href="contact.php">Contact</a></li>
-    <?php if ($user): ?>
-      <li><a href="my-bookings.php">My Bookings</a></li>
-      <li><a href="logout.php" style="color:#dc2626;font-weight:600;">Logout</a></li>
-    <?php else: ?>
-      <li><a href="login.php" class="btn btn-yellow">Login</a></li>
-    <?php endif; ?>
-  </ul>
-</nav>
->>>>>>> 944246f7d1f7012ed1c7107d999e7fdfb8af41b5
-
-<!-- Hero -->
-<section class="home-hero">
-  <video autoplay muted loop playsinline preload="auto">
-    <source src="hero.mp4.mp4" type="video/mp4">
-  </video>
-  <div class="home-hero-content">
-    <div class="home-hero-tag">⭐ Philippines' #1 Amusement Park</div>
-    <h1>Ride the Fun.<br /><em>Book in Seconds.</em></h1>
-    <p>Experience thrilling rides, family adventures, and unforgettable memories. Book online and skip the queue!</p>
-    <div class="home-hero-btns">
-      <a href="tickets.php" class="hero-btn-primary">🎟 Buy Tickets Now</a>
-      <a href="rides.php" class="hero-btn-outline">🎢 Explore Rides</a>
-    </div>
-  </div>
-</section>
-
-<!-- Stats bar -->
-<div class="stats-bar">
-  <div class="stats-bar-inner">
-    <div class="stats-bar-item"><div class="num">50+</div><div class="lbl">Exciting Rides</div></div>
-    <div class="stats-bar-item"><div class="num">500K+</div><div class="lbl">Happy Visitors</div></div>
-    <div class="stats-bar-item"><div class="num">4.9★</div><div class="lbl">Average Rating</div></div>
-    <div class="stats-bar-item"><div class="num">20+</div><div class="lbl">Years of Fun</div></div>
-  </div>
+<!-- Topbar -->
+<div class="ap-topbar">
+  🎢 Now open daily 9AM–9PM &nbsp;·&nbsp; Book online and skip the queue
+  <a href="tickets.php">Buy Tickets →</a>
 </div>
 
-<!-- Why Book Online -->
-<section class="why-section">
-  <div style="max-width:1000px;margin:0 auto;text-align:center;">
-    <div class="section-label">WHY BOOK ONLINE</div>
-    <h2 class="section-title">Skip the Line, Enjoy More</h2>
-    <p class="section-sub">Everything you need for a hassle-free park visit</p>
-  </div>
-  <div class="why-grid">
-    <div class="why-card">
-      <div class="why-icon" style="background:#fef3c7;">🎟</div>
-      <h3>Easy Booking</h3>
-      <p>Book tickets online in seconds and skip the queue at the gate</p>
-    </div>
-    <div class="why-card">
-      <div class="why-icon" style="background:#f3e8ff;">⚡</div>
-      <h3>Instant QR Code</h3>
-      <p>Get your QR entry code instantly right after payment</p>
-    </div>
-    <div class="why-card">
-      <div class="why-icon" style="background:#dcfce7;">🔒</div>
-      <h3>Secure Payments</h3>
-      <p>Pay safely via QR Ph, GCash, Maya, or any banking app</p>
-    </div>
-    <div class="why-card">
-      <div class="why-icon" style="background:#fce7f3;">🕐</div>
-      <h3>Open Year-Round</h3>
-      <p>Open 7 days a week, 9AM to 9PM — rain or shine</p>
-    </div>
-  </div>
-</section>
+<!-- Nav -->
+<?php render_nav($user, 'home'); ?>
 
-<!-- About -->
-<section class="about-section">
-  <div class="about-inner">
-    <div class="about-text">
-      <div class="section-label">ABOUT THE PARK</div>
-      <h2>Looking for <em style="font-style:normal;color:#7c3aed;">Adventure?</em></h2>
-      <p>AmusePark is your ultimate destination for thrills, laughter, and unforgettable memories. From heart-pounding roller coasters to gentle family rides, we have something for everyone.</p>
-      <p>Located in the heart of the Philippines, our park features over 50 world-class rides, multiple dining options, and entertainment zones for all ages.</p>
-      <div class="about-info-box">
-        <p>📍 123 Amusement Park Purok 3, Brgy. Cadulawan, Minglanilla, Cebu</p>
-        <p style="font-weight:700;color:#7c3aed;">🕐 Open daily: 9:00 AM – 9:00 PM</p>
-      </div>
-    </div>
-    <div class="about-img-wrap">
-      <img src="AmusementPark_1.jpg" alt="AmusePark panorama" />
-    </div>
-  </div>
-</section>
-
-<!-- CTA -->
-<section class="cta-section">
-  <h2>Ready for the Adventure?</h2>
-  <p>Book your tickets now and get your QR code instantly!</p>
-  <a href="tickets.php" class="cta-btn">🎟 Buy Tickets Now</a>
-</section>
-
-<?php if (count($maintenanceNames)): ?>
-  <div class="maintenance-bar">
-    <strong>⚠️ Service Update:</strong> <?= e(implode(', ', $maintenanceNames)) ?> are currently under maintenance.
-  </div>
+<?php if (count($maintenanceNames) > 0): ?>
+<div class="ap-maintenance">
+  🔧 Currently under maintenance: <?= e(implode(', ', $maintenanceNames)) ?>. We apologize for the inconvenience.
+</div>
 <?php endif; ?>
 
-<?php render_footer(); ?>
+<!-- ── HERO ── -->
+<section class="ap-hero">
+  <div class="ap-hero-bg">
+    <video autoplay muted loop playsinline>
+      <source src="hero.mp4.mp4" type="video/mp4" />
+    </video>
+  </div>
+  <div class="ap-hero-overlay"></div>
+  <div class="ap-hero-content">
+    <div class="ap-hero-badge">🎟 Online Booking Now Available</div>
+    <h1>Where Magic<br>Meets <span>Adventure</span></h1>
+    <p>Thrilling rides, unforgettable memories, and non-stop fun for the whole family. Your next great adventure starts here.</p>
+    <div class="ap-hero-btns">
+      <a href="tickets.php" class="ap-btn-gold">🎟 Buy Tickets Now</a>
+      <a href="rides.php" class="ap-btn-outline">🎢 Explore Rides</a>
+    </div>
+  </div>
+  <div class="ap-hero-stats">
+    <div class="ap-hero-stat">
+      <div class="ap-hero-stat-val">50+</div>
+      <div class="ap-hero-stat-lbl">Attractions</div>
+    </div>
+    <div class="ap-hero-stat">
+      <div class="ap-hero-stat-val">1M+</div>
+      <div class="ap-hero-stat-lbl">Happy Visitors</div>
+    </div>
+    <div class="ap-hero-stat">
+      <div class="ap-hero-stat-val">9AM</div>
+      <div class="ap-hero-stat-lbl">Opens Daily</div>
+    </div>
+    <div class="ap-hero-stat">
+      <div class="ap-hero-stat-val">⭐ 4.9</div>
+      <div class="ap-hero-stat-lbl">Guest Rating</div>
+    </div>
+  </div>
+</section>
 
+<!-- ── FEATURED RIDES ── -->
+<section class="ap-section">
+  <div class="ap-section-inner">
+    <div class="ap-section-label">🎢 Attractions</div>
+    <h2 class="ap-section-title">Featured Rides</h2>
+    <p class="ap-section-sub">From heart-pounding thrills to family-friendly fun — there's something for everyone.</p>
+
+    <?php if (count($featuredRides) > 0): ?>
+      <div class="ap-rides-grid">
+        <?php
+          $catTag = ['Thrill'=>'tag-thrill','Family'=>'tag-family','Kids'=>'tag-kids','Water'=>'tag-water','Classic'=>'tag-classic'];
+          foreach ($featuredRides as $r):
+            $cat = (string)($r['category'] ?? '');
+        ?>
+          <div class="ap-ride-card">
+            <?php if (!empty($r['image_url'])): ?>
+              <img class="ap-ride-img" src="<?= e($r['image_url']) ?>" alt="<?= e($r['name']) ?>" loading="lazy" />
+            <?php else: ?>
+              <div class="ap-ride-img-placeholder">🎡</div>
+            <?php endif; ?>
+            <div class="ap-ride-body">
+              <div class="ap-ride-name"><?= e($r['name']) ?></div>
+              <div class="ap-ride-desc"><?= e($r['description'] ?: 'An exciting ride experience awaits you.') ?></div>
+              <div class="ap-ride-meta">
+                <?php if ($cat): ?>
+                  <span class="ap-ride-tag <?= $catTag[$cat] ?? 'tag-classic' ?>"><?= e($cat) ?></span>
+                <?php endif; ?>
+                <?php if (!empty($r['duration_minutes'])): ?>
+                  <span class="ap-ride-tag tag-classic">⏱ <?= (int)$r['duration_minutes'] ?>min</span>
+                <?php endif; ?>
+                <?php if (!empty($r['min_height_cm'])): ?>
+                  <span class="ap-ride-tag tag-classic">📏 <?= (int)$r['min_height_cm'] ?>cm+</span>
+                <?php endif; ?>
+              </div>
+            </div>
+          </div>
+        <?php endforeach; ?>
+      </div>
+      <div style="text-align:center;margin-top:2.5rem;">
+        <a href="rides.php" class="ap-btn-gold" style="display:inline-flex;">View All Rides →</a>
+      </div>
+    <?php else: ?>
+      <div style="text-align:center;padding:3rem;color:#94a3b8;">
+        <div style="font-size:3rem;margin-bottom:1rem;">🎢</div>
+        <p>Rides coming soon — check back shortly!</p>
+      </div>
+    <?php endif; ?>
+  </div>
+</section>
+
+<!-- ── TICKETS ── -->
+<?php if (count($ticketTypes) > 0): ?>
+<section class="ap-section ap-tickets-section">
+  <div class="ap-section-inner">
+    <div class="ap-section-label">🎟 Pricing</div>
+    <h2 class="ap-section-title">Choose Your Ticket</h2>
+    <p class="ap-section-sub">Flexible packages for every kind of visitor. Book online and skip the queue.</p>
+
+    <div class="ap-ticket-grid">
+      <?php foreach ($ticketTypes as $t):
+        $maxR = isset($t['max_rides']) && $t['max_rides'] !== null ? (int)$t['max_rides'] : null;
+      ?>
+        <div class="ap-ticket-card">
+          <div class="ap-ticket-name"><?= e($t['name']) ?></div>
+          <div class="ap-ticket-desc"><?= e($t['description'] ?: 'Full day access to the park.') ?></div>
+          <div class="ap-ticket-rides">
+            🎢 <?= $maxR !== null ? 'Up to ' . $maxR . ' ride' . ($maxR === 1 ? '' : 's') : 'Unlimited rides' ?>
+          </div>
+          <div class="ap-ticket-price">₱<?= number_format((float)$t['price'], 0) ?> <span>/ person</span></div>
+          <a href="tickets.php?pkg=<?= (int)$t['id'] ?>" class="ap-ticket-btn">Book Now</a>
+          <button onclick="addToCartHome(<?= (int)$t['id'] ?>, this)"
+                  style="display:block;width:100%;margin-top:.6rem;padding:.65rem;border-radius:999px;
+                         background:transparent;border:2px solid rgba(255,255,255,.3);color:#fff;
+                         font-weight:700;font-size:.85rem;cursor:pointer;transition:all .2s;">
+            🛒 Add to Cart
+          </button>
+        </div>
+      <?php endforeach; ?>
+    </div>
+  </div>
+</section>
+<?php endif; ?>
+
+<!-- ── WHY US ── -->
+<section class="ap-section" style="background:#f8fafc;">
+  <div class="ap-section-inner">
+    <div class="ap-section-label">✨ Why AmusePark</div>
+    <h2 class="ap-section-title">The Best Day Out, Guaranteed</h2>
+    <p class="ap-section-sub">We go above and beyond to make every visit magical.</p>
+    <div class="ap-why-grid">
+      <div class="ap-why-card">
+        <div class="ap-why-icon">🎢</div>
+        <div class="ap-why-title">World-Class Rides</div>
+        <div class="ap-why-desc">From gentle carousels to adrenaline-pumping coasters — rides for every age and thrill level.</div>
+      </div>
+      <div class="ap-why-card">
+        <div class="ap-why-icon">🎟</div>
+        <div class="ap-why-title">Easy Online Booking</div>
+        <div class="ap-why-desc">Skip the queue. Book your tickets online in minutes and go straight to the fun.</div>
+      </div>
+      <div class="ap-why-card">
+        <div class="ap-why-icon">👨‍👩‍👧‍👦</div>
+        <div class="ap-why-title">Family Friendly</div>
+        <div class="ap-why-desc">Safe, clean, and welcoming for families with kids of all ages. Fun for everyone.</div>
+      </div>
+      <div class="ap-why-card">
+        <div class="ap-why-icon">🔒</div>
+        <div class="ap-why-title">Safe & Secure</div>
+        <div class="ap-why-desc">All rides are regularly inspected. Your safety is our top priority every single day.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── CTA ── -->
+<section class="ap-cta">
+  <h2>Ready for the Adventure?</h2>
+  <p>Book your tickets now and create memories that last a lifetime.</p>
+  <a href="tickets.php" class="ap-btn-gold" style="font-size:1.1rem;padding:1rem 2.75rem;">🎟 Get Your Tickets</a>
+</section>
+
+<!-- ── FOOTER ── -->
+<footer class="ap-footer">
+  <p style="margin:0 0 .75rem;">
+    <a href="index.php">Home</a>
+    <a href="rides.php">Rides</a>
+    <a href="tickets.php">Tickets</a>
+    <a href="contact.php">Contact</a>
+    <?php if ($user): ?>
+      <a href="my-bookings.php">My Bookings</a>
+    <?php endif; ?>
+  </p>
+  <p style="margin:0;">© <?= date('Y') ?> AmusePark Philippines. All rights reserved.</p>
+</footer>
+
+<script>
+function addToCartHome(tid, btn) {
+  btn.disabled = true;
+  btn.textContent = 'Adding…';
+  fetch('cart.php', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/x-www-form-urlencoded', 'X-Requested-With': 'XMLHttpRequest'},
+    body: 'action=add&ticket_type_id=' + tid + '&qty=1'
+  })
+  .then(function(r) { return r.json(); })
+  .then(function(d) {
+    btn.textContent = '✓ Added to Cart!';
+    btn.style.borderColor = '#86efac';
+    btn.style.color = '#86efac';
+    var badge = document.getElementById('cart-nav-badge');
+    if (badge) {
+      badge.textContent = d.count;
+      badge.style.display = d.count > 0 ? 'inline-flex' : 'none';
+    }
+    setTimeout(function() {
+      btn.textContent = '🛒 Add to Cart';
+      btn.style.borderColor = 'rgba(255,255,255,.3)';
+      btn.style.color = '#fff';
+      btn.disabled = false;
+    }, 2000);
+  })
+  .catch(function() {
+    btn.textContent = '🛒 Add to Cart';
+    btn.disabled = false;
+  });
+}
+</script>
 </body>
 </html>
