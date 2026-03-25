@@ -235,7 +235,14 @@ $payColors = [
           } catch (\Throwable $e) {}
         ?>
           <tr>
-            <td><span class="ref-code"><?= e($b['booking_reference'] ?? '') ?></span></td>
+            <td>
+              <a href="../booking-detail.php?ref=<?= urlencode((string)($b['booking_reference'] ?? '')) ?>"
+                 class="ref-code"
+                 style="text-decoration:none;border-bottom:1px dashed #5eead4;"
+                 title="View full booking details">
+                <?= e($b['booking_reference'] ?? '') ?>
+              </a>
+            </td>
             <td>
               <div style="font-weight:600;"><?= e($b['customer_name'] ?? '') ?></div>
               <div style="color:#94a3b8;font-size:.78rem;"><?= e($b['customer_email'] ?? '') ?></div>

@@ -120,7 +120,13 @@ $payColors = ['Paid' => 'badge-green', 'Pending' => 'badge-yellow', 'Cancelled' 
             }
           ?>
           <tr>
-            <td><code style="font-family:monospace;color:#1d4ed8;font-weight:700;background:#eff6ff;padding:.15rem .4rem;border-radius:.3rem;"><?= e($b['booking_reference'] ?? '') ?></code></td>
+            <td>
+              <a href="../booking-detail.php?ref=<?= urlencode((string)($b['booking_reference'] ?? '')) ?>"
+                 style="font-family:monospace;color:#1d4ed8;font-weight:700;background:#eff6ff;padding:.15rem .4rem;border-radius:.3rem;text-decoration:none;border-bottom:1px dashed #93c5fd;"
+                 title="View booking details">
+                <?= e($b['booking_reference'] ?? '') ?>
+              </a>
+            </td>
             <td>
               <div style="font-weight:600;"><?= e($b['customer_name'] ?? '') ?></div>
               <div style="color:#94a3b8;font-size:.8rem;"><?= e($b['customer_email'] ?? '') ?></div>

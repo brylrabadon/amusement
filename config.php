@@ -25,6 +25,7 @@ defined('DB_PASS') || define('DB_PASS', (string)(getenv('AMUSEPARK_DB_PASS') ?: 
 defined('PAYMONGO_SECRET_KEY')    || define('PAYMONGO_SECRET_KEY',    (string)(getenv('PAYMONGO_SECRET_KEY')    ?: ''));
 defined('PAYMONGO_PUBLIC_KEY')    || define('PAYMONGO_PUBLIC_KEY',     (string)(getenv('PAYMONGO_PUBLIC_KEY')    ?: ''));
 defined('PAYMONGO_WEBHOOK_SECRET')|| define('PAYMONGO_WEBHOOK_SECRET', (string)(getenv('PAYMONGO_WEBHOOK_SECRET')?: ''));
+defined('PAYMONGO_DEV_BYPASS')    || define('PAYMONGO_DEV_BYPASS',     false);
 
 function render_db_error_page(Throwable $e): never
 {

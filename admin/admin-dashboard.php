@@ -308,7 +308,13 @@ $payColors = [
                 $pc = $payColors[$ps] ?? ['bg'=>'#f1f5f9','color'=>'#475569'];
               ?>
                 <tr>
-                  <td><span class="bk-ref"><?= e($b['booking_reference'] ?? '') ?></span></td>
+                  <td>
+                    <a href="booking-detail.php?ref=<?= urlencode((string)($b['booking_reference'] ?? '')) ?>"
+                       class="bk-ref" style="text-decoration:none;border-bottom:1px dashed #a5b4fc;"
+                       title="View booking details">
+                      <?= e($b['booking_reference'] ?? '') ?>
+                    </a>
+                  </td>
                   <td style="font-weight:600;max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;"><?= e($b['customer_name'] ?? '') ?></td>
                   <td style="color:#64748b;font-size:.8rem;"><?= e($b['ticket_type_name'] ?? '') ?></td>
                   <td style="font-weight:700;">₱<?= number_format((float)($b['total_amount'] ?? 0), 0) ?></td>

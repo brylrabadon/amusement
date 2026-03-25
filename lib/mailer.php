@@ -2,187 +2,218 @@
 declare(strict_types=1);
 
 /**
- * Send a cancellation email to the customer when a booking is cancelled.
- *
- * @param array $booking  Booking row (must include: customer_name, customer_email,
- *                        booking_reference, visit_date, ticket_type_name, quantity, total_amount)
- * @param array $tickets  Array of ticket rows (each must include: ticket_number)
- * @param PDO   $pdo      Database connection
- * @return bool           true on success, false if mail() failed
+ * AmusePark Mailer — booking cancellation + confirmation emails
+ */
+
+/**
+ * Build the app base URL from server globals.
+ */
+function _mailer_base_url(): string
+{
+    if (!isset($_SERVER['HTTP_HOST']) || $_SERVER['HTTP_HOST'] === '') {
+        return 'http://localhost/amusement';
+    }
+    $scheme = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
+    $host   = $_SERVER['HTTP_HOST'];
+
+    // Derive app subfolder from SCRIPT_NAME (e.g. /amusement/tickets.php → /amusement)
+    $script = str_replace('\\', '/', (string)($_SERVER['SCRIPT_NAME'] ?? ''));
+    $docRoot = str_replace('\\', '/', (string)realpath((string)($_SERVER['DOCUMENT_ROOT'] ?? '')) ?: '');
+    $appRoot = str_replace('\\', '/', (string)realpath(__DIR__ . '/..') ?: '');
+    $sub = '';
+    if ($docRoot !== '' && stripos($appRoot, $docRoot) === 0) {
+        $sub = trim(substr($appRoot, strlen($docRoot)), '/');
+        $sub = $sub !== '' ? '/' . $sub : '';
+    }
+    return $scheme . '://' . $host . $sub;
+}
+
+/**
+ * Send a cancellation email when a booking expires / is cancelled.
+ * Includes: ticket numbers, full booking details, Continue Booking + Cancel Booking links.
  */
 function send_cancellation_email(array $booking, array $tickets, PDO $pdo): bool
 {
-    $to     = (string)($booking['customer_email'] ?? '');
-    $ref    = (string)($booking['booking_reference'] ?? '');
-    $name   = (string)($booking['customer_name'] ?? '');
-    $email  = (string)($booking['customer_email'] ?? '');
-    $date   = (string)($booking['visit_date'] ?? '');
-    $type   = (string)($booking['ticket_type_name'] ?? '');
-    $qty    = (string)($booking['quantity'] ?? '');
-    $amount = (string)($booking['total_amount'] ?? '');
+    $to      = (string)($booking['customer_email'] ?? '');
+    $ref     = (string)($booking['booking_reference'] ?? '');
+    $name    = (string)($booking['customer_name'] ?? '');
+    $email   = (string)($booking['customer_email'] ?? '');
+    $phone   = (string)($booking['customer_phone'] ?? '—');
+    $date    = (string)($booking['visit_date'] ?? '');
+    $type    = (string)($booking['ticket_type_name'] ?? '');
+    $qty     = (int)($booking['quantity'] ?? 1);
+    $amount  = number_format((float)($booking['total_amount'] ?? 0), 2);
+    $booked  = (string)($booking['created_at'] ?? '');
+    $deadline = (string)($booking['payment_deadline'] ?? $booking['expires_at'] ?? '');
 
-    $ticketNumbers = [];
+    if ($to === '') return false;
+
+    $base = _mailer_base_url();
+    $continueUrl = $base . '/tickets.php?prefill=' . rawurlencode($ref);
+    $cancelUrl   = $base . '/my-bookings.php';
+
+    // Ticket numbers
+    $ticketRows = '';
     foreach ($tickets as $t) {
-        $ticketNumbers[] = htmlspecialchars((string)($t['ticket_number'] ?? ''), ENT_QUOTES, 'UTF-8');
+        $tn = htmlspecialchars((string)($t['ticket_number'] ?? ''), ENT_QUOTES, 'UTF-8');
+        $ticketRows .= '<tr><td colspan="2" style="padding:.5rem 1rem;font-family:monospace;background:#f8fafc;border-bottom:1px solid #e5e7eb;">'
+            . '🎫 ' . $tn . '</td></tr>';
+    }
+    if ($ticketRows === '') {
+        $ticketRows = '<tr><td colspan="2" style="padding:.5rem 1rem;color:#9ca3af;font-style:italic;">No tickets issued.</td></tr>';
     }
 
-    $today       = date('Y-m-d');
-    $isRecoverable = $date >= $today;
+    $h = 'htmlspecialchars';
+    $e = fn(string $v) => htmlspecialchars($v, ENT_QUOTES, 'UTF-8');
 
-    // Build the base URL dynamically or fall back to a placeholder
-    $baseUrl = (isset($_SERVER['HTTP_HOST']) && $_SERVER['HTTP_HOST'] !== '')
-        ? 'http' . ((!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 's' : '') . '://' . $_SERVER['HTTP_HOST']
-        : 'http://localhost';
-
-    $rebookUrl  = $baseUrl . '/tickets.php?prefill=' . rawurlencode($ref);
-    $cancelUrl  = $baseUrl . '/my-bookings.php';
-
-    // ---- Ticket numbers HTML ----
-    $ticketHtml = '';
-    if (count($ticketNumbers) > 0) {
-        $ticketHtml = '<ul style="margin:0.5rem 0 0 1.25rem;padding:0;">';
-        foreach ($ticketNumbers as $tn) {
-            $ticketHtml .= '<li style="font-family:monospace;margin-bottom:0.25rem;">' . $tn . '</li>';
-        }
-        $ticketHtml .= '</ul>';
-    } else {
-        $ticketHtml = '<span style="color:#6b7280;font-style:italic;">No tickets issued.</span>';
-    }
-
-    // ---- Action section ----
-    if ($isRecoverable) {
-        $actionHtml = '
-        <div style="background:#f0fdf4;border:1px solid #86efac;border-radius:0.75rem;padding:1.25rem;margin-top:1.5rem;">
-          <p style="margin:0 0 0.75rem;font-weight:700;color:#14532d;">Your visit date is still upcoming — you can rebook!</p>
-          <a href="' . $rebookUrl . '" style="display:inline-block;background:#16a34a;color:#fff;padding:0.65rem 1.5rem;border-radius:999px;font-weight:700;text-decoration:none;">
-            🎟 Continue Booking
-          </a>
-        </div>';
-    } else {
-        $actionHtml = '
-        <div style="background:#fef2f2;border:1px solid #fca5a5;border-radius:0.75rem;padding:1.25rem;margin-top:1.5rem;">
-          <p style="margin:0 0 0.75rem;font-weight:700;color:#7f1d1d;">This booking has been permanently cancelled. The visit date has passed.</p>
-          <a href="' . $cancelUrl . '" style="display:inline-block;background:#dc2626;color:#fff;padding:0.65rem 1.5rem;border-radius:999px;font-weight:700;text-decoration:none;">
-            View My Bookings
-          </a>
-        </div>';
-    }
-
-    // ---- HTML body ----
     $htmlBody = '<!DOCTYPE html>
 <html lang="en">
 <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
-<body style="margin:0;padding:0;background:#f9fafb;font-family:Segoe UI,sans-serif;color:#111827;">
-  <div style="max-width:600px;margin:2rem auto;background:#fff;border-radius:1rem;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,0.08);">
-    <!-- Header -->
-    <div style="background:linear-gradient(135deg,#7c3aed,#a855f7);padding:2rem;text-align:center;">
-      <h1 style="margin:0;color:#fff;font-size:1.6rem;font-weight:900;">AmusePark</h1>
-      <p style="margin:0.5rem 0 0;color:#e9d5ff;font-size:0.95rem;">Ticket Cancellation Notice</p>
-    </div>
-    <!-- Body -->
-    <div style="padding:2rem;">
-      <p style="font-size:1rem;margin-bottom:1.5rem;">Dear <strong>' . htmlspecialchars($name, ENT_QUOTES, 'UTF-8') . '</strong>,</p>
-      <p style="margin-bottom:1.5rem;color:#374151;">Your booking has been <strong style="color:#dc2626;">cancelled</strong> because it was not completed within the required time. Here are the details:</p>
+<body style="margin:0;padding:0;background:#f1f5f9;font-family:Segoe UI,system-ui,sans-serif;color:#111827;">
+<div style="max-width:600px;margin:2rem auto;background:#fff;border-radius:1.25rem;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,.1);">
 
-      <!-- Booking Details Table -->
-      <table style="width:100%;border-collapse:collapse;font-size:0.9rem;margin-bottom:1rem;">
-        <tr style="background:#f8fafc;">
-          <td style="padding:0.75rem 1rem;font-weight:700;color:#374151;border-bottom:1px solid #e5e7eb;width:45%;">Booking Reference</td>
-          <td style="padding:0.75rem 1rem;font-family:monospace;border-bottom:1px solid #e5e7eb;">' . htmlspecialchars($ref, ENT_QUOTES, 'UTF-8') . '</td>
-        </tr>
-        <tr>
-          <td style="padding:0.75rem 1rem;font-weight:700;color:#374151;border-bottom:1px solid #e5e7eb;">Customer Name</td>
-          <td style="padding:0.75rem 1rem;border-bottom:1px solid #e5e7eb;">' . htmlspecialchars($name, ENT_QUOTES, 'UTF-8') . '</td>
-        </tr>
-        <tr style="background:#f8fafc;">
-          <td style="padding:0.75rem 1rem;font-weight:700;color:#374151;border-bottom:1px solid #e5e7eb;">Email</td>
-          <td style="padding:0.75rem 1rem;border-bottom:1px solid #e5e7eb;">' . htmlspecialchars($email, ENT_QUOTES, 'UTF-8') . '</td>
-        </tr>
-        <tr>
-          <td style="padding:0.75rem 1rem;font-weight:700;color:#374151;border-bottom:1px solid #e5e7eb;">Visit Date</td>
-          <td style="padding:0.75rem 1rem;border-bottom:1px solid #e5e7eb;">' . htmlspecialchars($date, ENT_QUOTES, 'UTF-8') . '</td>
-        </tr>
-        <tr style="background:#f8fafc;">
-          <td style="padding:0.75rem 1rem;font-weight:700;color:#374151;border-bottom:1px solid #e5e7eb;">Ticket Type</td>
-          <td style="padding:0.75rem 1rem;border-bottom:1px solid #e5e7eb;">' . htmlspecialchars($type, ENT_QUOTES, 'UTF-8') . '</td>
-        </tr>
-        <tr>
-          <td style="padding:0.75rem 1rem;font-weight:700;color:#374151;border-bottom:1px solid #e5e7eb;">Quantity</td>
-          <td style="padding:0.75rem 1rem;border-bottom:1px solid #e5e7eb;">' . htmlspecialchars($qty, ENT_QUOTES, 'UTF-8') . '</td>
-        </tr>
-        <tr style="background:#f8fafc;">
-          <td style="padding:0.75rem 1rem;font-weight:700;color:#374151;">Total Amount</td>
-          <td style="padding:0.75rem 1rem;">&#8369;' . htmlspecialchars($amount, ENT_QUOTES, 'UTF-8') . '</td>
-        </tr>
-      </table>
-
-      <!-- Ticket Numbers -->
-      <div style="background:#f8fafc;border-radius:0.75rem;padding:1rem;margin-bottom:1rem;">
-        <p style="margin:0 0 0.5rem;font-weight:700;color:#374151;">Ticket Number(s):</p>
-        ' . $ticketHtml . '
-      </div>
-
-      ' . $actionHtml . '
-
-      <p style="margin-top:2rem;color:#6b7280;font-size:0.85rem;">If you have questions, please contact our support team.</p>
-    </div>
-    <!-- Footer -->
-    <div style="background:#111827;padding:1.25rem;text-align:center;">
-      <p style="margin:0;color:#9ca3af;font-size:0.8rem;">&copy; 2026 AmusePark Philippines. All rights reserved.</p>
-    </div>
+  <!-- Header -->
+  <div style="background:linear-gradient(135deg,#7c3aed 0%,#a855f7 60%,#ec4899 100%);padding:2.5rem 2rem;text-align:center;">
+    <div style="font-size:2.5rem;margin-bottom:.5rem;">⏰</div>
+    <h1 style="margin:0;color:#fff;font-size:1.6rem;font-weight:900;letter-spacing:-.02em;">Booking Expired</h1>
+    <p style="margin:.5rem 0 0;color:#e9d5ff;font-size:.95rem;">Your reservation was not completed in time</p>
   </div>
+
+  <!-- Body -->
+  <div style="padding:2rem;">
+    <p style="font-size:1rem;margin:0 0 1.25rem;">Dear <strong>' . $e($name) . '</strong>,</p>
+    <p style="color:#374151;margin:0 0 1.5rem;line-height:1.6;">
+      Your booking <strong style="color:#7c3aed;">' . $e($ref) . '</strong> has been
+      <strong style="color:#dc2626;">automatically cancelled</strong> because payment was not completed
+      within the 3-minute reservation window.
+    </p>
+
+    <!-- Booking Details -->
+    <div style="background:#faf5ff;border:1px solid #e9d5ff;border-radius:.85rem;overflow:hidden;margin-bottom:1.5rem;">
+      <div style="background:#7c3aed;padding:.75rem 1rem;">
+        <span style="color:#fff;font-weight:800;font-size:.9rem;">📋 Booking Details</span>
+      </div>
+      <table style="width:100%;border-collapse:collapse;font-size:.9rem;">
+        <tr>
+          <td style="padding:.65rem 1rem;font-weight:700;color:#374151;border-bottom:1px solid #e5e7eb;width:45%;">Reference No.</td>
+          <td style="padding:.65rem 1rem;font-family:monospace;font-weight:700;color:#7c3aed;border-bottom:1px solid #e5e7eb;">' . $e($ref) . '</td>
+        </tr>
+        <tr style="background:#f8fafc;">
+          <td style="padding:.65rem 1rem;font-weight:700;color:#374151;border-bottom:1px solid #e5e7eb;">Customer Name</td>
+          <td style="padding:.65rem 1rem;border-bottom:1px solid #e5e7eb;">' . $e($name) . '</td>
+        </tr>
+        <tr>
+          <td style="padding:.65rem 1rem;font-weight:700;color:#374151;border-bottom:1px solid #e5e7eb;">Email</td>
+          <td style="padding:.65rem 1rem;border-bottom:1px solid #e5e7eb;">' . $e($email) . '</td>
+        </tr>
+        <tr style="background:#f8fafc;">
+          <td style="padding:.65rem 1rem;font-weight:700;color:#374151;border-bottom:1px solid #e5e7eb;">Phone</td>
+          <td style="padding:.65rem 1rem;border-bottom:1px solid #e5e7eb;">' . $e($phone) . '</td>
+        </tr>
+        <tr>
+          <td style="padding:.65rem 1rem;font-weight:700;color:#374151;border-bottom:1px solid #e5e7eb;">Ticket Type</td>
+          <td style="padding:.65rem 1rem;border-bottom:1px solid #e5e7eb;">' . $e($type) . '</td>
+        </tr>
+        <tr style="background:#f8fafc;">
+          <td style="padding:.65rem 1rem;font-weight:700;color:#374151;border-bottom:1px solid #e5e7eb;">Quantity</td>
+          <td style="padding:.65rem 1rem;border-bottom:1px solid #e5e7eb;">' . $e((string)$qty) . '</td>
+        </tr>
+        <tr>
+          <td style="padding:.65rem 1rem;font-weight:700;color:#374151;border-bottom:1px solid #e5e7eb;">Visit Date</td>
+          <td style="padding:.65rem 1rem;border-bottom:1px solid #e5e7eb;">' . $e($date) . '</td>
+        </tr>
+        <tr style="background:#f8fafc;">
+          <td style="padding:.65rem 1rem;font-weight:700;color:#374151;border-bottom:1px solid #e5e7eb;">Total Amount</td>
+          <td style="padding:.65rem 1rem;font-weight:800;color:#7c3aed;border-bottom:1px solid #e5e7eb;">&#8369;' . $e($amount) . '</td>
+        </tr>
+        <tr>
+          <td style="padding:.65rem 1rem;font-weight:700;color:#374151;border-bottom:1px solid #e5e7eb;">Booked At</td>
+          <td style="padding:.65rem 1rem;border-bottom:1px solid #e5e7eb;">' . $e($booked) . '</td>
+        </tr>
+        <tr style="background:#f8fafc;">
+          <td style="padding:.65rem 1rem;font-weight:700;color:#dc2626;">Payment Deadline</td>
+          <td style="padding:.65rem 1rem;color:#dc2626;font-weight:700;">' . $e($deadline) . '</td>
+        </tr>
+        ' . $ticketRows . '
+      </table>
+    </div>
+
+    <!-- Action Buttons -->
+    <div style="background:#f0fdf4;border:1px solid #86efac;border-radius:.85rem;padding:1.5rem;margin-bottom:1.5rem;text-align:center;">
+      <p style="margin:0 0 1rem;font-weight:700;color:#14532d;font-size:.95rem;">
+        Want to book again? Your visit date may still be available.
+      </p>
+      <a href="' . $continueUrl . '"
+         style="display:inline-block;background:#16a34a;color:#fff;padding:.75rem 2rem;border-radius:999px;font-weight:800;text-decoration:none;font-size:.95rem;margin-right:.5rem;">
+        🎟 Continue Booking
+      </a>
+    </div>
+
+    <div style="background:#fef2f2;border:1px solid #fca5a5;border-radius:.85rem;padding:1.25rem;text-align:center;">
+      <p style="margin:0 0 .75rem;color:#7f1d1d;font-size:.88rem;">
+        If you no longer wish to book, you can dismiss this notice.
+      </p>
+      <a href="' . $cancelUrl . '"
+         style="display:inline-block;background:#dc2626;color:#fff;padding:.65rem 1.5rem;border-radius:999px;font-weight:700;text-decoration:none;font-size:.88rem;">
+        ✕ Cancel Booking
+      </a>
+    </div>
+
+    <p style="margin-top:2rem;color:#9ca3af;font-size:.82rem;text-align:center;">
+      Questions? Contact us at <a href="mailto:support@amusepark.com" style="color:#7c3aed;">support@amusepark.com</a>
+    </p>
+  </div>
+
+  <!-- Footer -->
+  <div style="background:#0f0a1e;padding:1.25rem;text-align:center;">
+    <p style="margin:0;color:#6b7280;font-size:.8rem;">&copy; ' . date('Y') . ' AmusePark Philippines. All rights reserved.</p>
+  </div>
+</div>
 </body>
 </html>';
 
-    // ---- Plain text fallback ----
-    $textBody  = "Dear {$name},\n\n";
-    $textBody .= "Your booking has been cancelled.\n\n";
-    $textBody .= "Booking Reference : {$ref}\n";
-    $textBody .= "Customer Name     : {$name}\n";
-    $textBody .= "Customer Email    : {$email}\n";
-    $textBody .= "Visit Date        : {$date}\n";
-    $textBody .= "Ticket Type       : {$type}\n";
-    $textBody .= "Quantity          : {$qty}\n";
-    $textBody .= "Total Amount      : {$amount}\n\n";
-    foreach ($ticketNumbers as $tn) {
-        $textBody .= "Ticket: {$tn}\n";
+    // Plain text fallback
+    $text  = "Dear {$name},\n\n";
+    $text .= "Your booking {$ref} has been automatically cancelled (payment not completed within 3 minutes).\n\n";
+    $text .= "Booking Reference : {$ref}\n";
+    $text .= "Customer Name     : {$name}\n";
+    $text .= "Email             : {$email}\n";
+    $text .= "Phone             : {$phone}\n";
+    $text .= "Ticket Type       : {$type}\n";
+    $text .= "Quantity          : {$qty}\n";
+    $text .= "Visit Date        : {$date}\n";
+    $text .= "Total Amount      : PHP {$amount}\n";
+    $text .= "Booked At         : {$booked}\n";
+    $text .= "Payment Deadline  : {$deadline}\n\n";
+    foreach ($tickets as $t) {
+        $text .= "Ticket: " . ($t['ticket_number'] ?? '') . "\n";
     }
-    if ($isRecoverable) {
-        $textBody .= "\nYour visit date is still upcoming. Rebook here:\n{$rebookUrl}\n";
-    } else {
-        $textBody .= "\nThis booking has been permanently cancelled. View bookings:\n{$cancelUrl}\n";
-    }
-    $textBody .= "\nThank you for choosing AmusePark.\n";
+    $text .= "\nContinue Booking : {$continueUrl}\n";
+    $text .= "Cancel Booking   : {$cancelUrl}\n\n";
+    $text .= "Thank you for choosing AmusePark.\n";
 
-    // ---- Subject ----
-    $subject = 'Ticket Cancellation Notice – Ref: ' . $ref;
-
-    // ---- Multipart headers ----
-    $boundary = 'AmusePark_' . md5(uniqid((string)mt_rand(), true));
+    $subject  = 'Booking Expired – Ref: ' . $ref . ' | AmusePark';
+    $boundary = 'AP_' . md5(uniqid((string)mt_rand(), true));
     $headers  = "From: AmusePark <noreply@amusepark.com>\r\n";
+    $headers .= "Reply-To: support@amusepark.com\r\n";
     $headers .= "MIME-Version: 1.0\r\n";
     $headers .= "Content-Type: multipart/alternative; boundary=\"{$boundary}\"\r\n";
 
-    $message  = "--{$boundary}\r\n";
-    $message .= "Content-Type: text/plain; charset=UTF-8\r\n\r\n";
-    $message .= $textBody . "\r\n";
-    $message .= "--{$boundary}\r\n";
-    $message .= "Content-Type: text/html; charset=UTF-8\r\n\r\n";
-    $message .= $htmlBody . "\r\n";
-    $message .= "--{$boundary}--";
+    $msg  = "--{$boundary}\r\nContent-Type: text/plain; charset=UTF-8\r\n\r\n" . $text . "\r\n";
+    $msg .= "--{$boundary}\r\nContent-Type: text/html; charset=UTF-8\r\n\r\n" . $htmlBody . "\r\n";
+    $msg .= "--{$boundary}--";
 
-    $sent = mail($to, $subject, $message, $headers);
+    $sent = @mail($to, $subject, $msg, $headers);
 
     if (!$sent) {
-        $logDir  = __DIR__ . '/../logs';
-        if (!is_dir($logDir)) {
-            mkdir($logDir, 0755, true);
-        }
-        $logFile = $logDir . '/email_failures.log';
-        $entry   = '[' . date('Y-m-d H:i:s') . '] FAILED booking_reference=' . $ref . ' email=' . $email . "\n";
-        file_put_contents($logFile, $entry, FILE_APPEND | LOCK_EX);
-        return false;
+        $logDir = __DIR__ . '/../logs';
+        if (!is_dir($logDir)) mkdir($logDir, 0755, true);
+        file_put_contents(
+            $logDir . '/email_failures.log',
+            '[' . date('Y-m-d H:i:s') . '] FAILED ref=' . $ref . ' to=' . $to . "\n",
+            FILE_APPEND | LOCK_EX
+        );
     }
 
-    return true;
+    return $sent;
 }

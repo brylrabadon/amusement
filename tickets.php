@@ -163,17 +163,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $unitPrice = (float)$type['price'];
         $total     = $unitPrice * max(1, $qty);
         $ref       = booking_ref();
+        $expiresAt = date('Y-m-d H:i:s', time() + 180); // 3-minute deadline
         $ridesSuffix = count($selectedRideNames) > 0 ? '|RIDES:' . implode(',', $selectedRideNames) : '';
         $qrData    = 'AMUSEPARK|' . $ref . '|' . $name . '|' . $visitDate . '|' . ($type['name'] ?? '') . 'x' . $qty . $ridesSuffix;
         $ins = $pdo->prepare(
             'INSERT INTO bookings (booking_reference, user_id, customer_name, customer_email, customer_phone, visit_date,
-                ticket_type_id, ticket_type_name, quantity, unit_price, total_amount, payment_status, payment_method, qr_code_data, status)
-             VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)'
+                ticket_type_id, ticket_type_name, quantity, unit_price, total_amount, payment_status, payment_method, qr_code_data, status, expires_at, payment_deadline)
+             VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)'
         );
         $ins->execute([$ref, (int)$user['id'], $name, $email, $phone, $visitDate,
             (int)$type['id'], (string)$type['name'], max(1, $qty), $unitPrice, $total,
-            'Pending', 'QR Ph', $qrData, 'Active']);
+            'Pending', 'QR Ph', $qrData, 'Active', $expiresAt, $expiresAt]);
         $bookingId = (int)$pdo->lastInsertId();
+
+        // Insert individual tickets
         try {
             $insTicket = $pdo->prepare('INSERT INTO tickets (booking_id, ticket_number, status) VALUES (?, ?, ?)');
             for ($i = 1; $i <= max(1, $qty); $i++) {
@@ -181,8 +184,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $insTicket->execute([$bookingId, $ticketNumber, 'ACTIVE']);
             }
         } catch (\Throwable $e) {}
-        $flow['booking_id']         = $bookingId;
-        $flow['selected_ride_ids']  = $selectedRideIds;
+
+        // Store selected rides in relational booking_rides table
+        if (count($selectedRideIds) > 0) {
+            try {
+                $insRide = $pdo->prepare('INSERT IGNORE INTO booking_rides (booking_id, ride_id) VALUES (?, ?)');
+                foreach ($selectedRideIds as $rideId) {
+                    $insRide->execute([$bookingId, $rideId]);
+                }
+            } catch (\Throwable $e) {}
+        }
+
+        $flow['booking_id']          = $bookingId;
+        $flow['selected_ride_ids']   = $selectedRideIds;
         $flow['selected_ride_names'] = $selectedRideNames;
         $_SESSION['booking_flow'] = $flow;
 
@@ -193,7 +207,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $qrResult = paymongo_create_qrph(
                 $amountCentavos, $description,
                 $name, $email, $phone,
-                ['booking_reference' => $ref, 'booking_id' => $bookingId]
+                ['booking_reference' => $ref, 'booking_id' => (string)$bookingId]
             );
             if ($qrResult['success']) {
                 $pdo->prepare('UPDATE bookings SET paymongo_intent_id = ?, paymongo_qr_image = ?, paymongo_qr_code_id = ? WHERE id = ?')
@@ -251,6 +265,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $pdo->prepare('UPDATE bookings SET payment_status = ?, payment_reference = ? WHERE id = ?')
                     ->execute(['Paid', 'DEMO-' . time(), $bookingId]);
                 $paid = true;
+            } elseif (defined('PAYMONGO_DEV_BYPASS') && PAYMONGO_DEV_BYPASS === true) {
+                // Dev bypass — skip real payment check on localhost
+                $pdo->prepare('UPDATE bookings SET payment_status = ?, payment_reference = ? WHERE id = ?')
+                    ->execute(['Paid', 'DEV-BYPASS-' . time(), $bookingId]);
+                $paid = true;
             } else {
                 flash_set('error', 'Payment not yet confirmed. Please complete the QR Ph payment first.');
                 redirect('tickets.php?step=2');
@@ -284,8 +303,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         );
         if (!$qrResult['success']) {
             echo json_encode(['success' => false, 'error' => $qrResult['error'] ?? 'QR generation failed.']); exit;
-        }
-        $pdo->prepare('UPDATE bookings SET paymongo_intent_id = ?, paymongo_qr_image = ?, paymongo_qr_code_id = ? WHERE id = ?')
+        }        $pdo->prepare('UPDATE bookings SET paymongo_intent_id = ?, paymongo_qr_image = ?, paymongo_qr_code_id = ? WHERE id = ?')
             ->execute([$qrResult['payment_intent_id'], $qrResult['qr_image_url'], $qrResult['qr_code_id'], $bookingId]);
         $flow['paymongo_intent_id'] = $qrResult['payment_intent_id'];
         $_SESSION['booking_flow'] = $flow;
@@ -1025,8 +1043,14 @@ if ($step === 3 && $booking) {
   <!-- ═══════════════════════════════════════════════════════ -->
   <?php if ($step === 2 && $booking): ?>
     <?php
-      $createdAt   = strtotime((string)($booking['created_at'] ?? 'now'));
-      $expiresAt   = $createdAt + 180; // 3-min booking expiry
+      // Use expires_at from DB if available, otherwise fall back to created_at + 3 min
+      $expiresAtRaw = (string)($booking['expires_at'] ?? '');
+      if ($expiresAtRaw !== '' && $expiresAtRaw !== '0000-00-00 00:00:00') {
+          $expiresAt = strtotime($expiresAtRaw);
+      } else {
+          $createdAt = strtotime((string)($booking['created_at'] ?? 'now'));
+          $expiresAt = $createdAt + 180;
+      }
       $secondsLeft = max(0, $expiresAt - time());
 
       // PayMongo QR — 30-min expiry from when QR was generated
@@ -1143,6 +1167,14 @@ if ($step === 3 && $booking) {
         </script>
       <?php else: ?>
         <!-- QR generation failed — show fallback -->
+        <?php
+          // Try to get the actual error from PayMongo for debugging
+          $qrDebugError = '';
+          if (PAYMONGO_SECRET_KEY !== '') {
+              $testRes = paymongo_request('GET', '/v1/payment_methods');
+              // Just check connectivity — actual error was during booking creation
+          }
+        ?>
         <div style="background:#fee2e2;border:1px solid #fca5a5;border-radius:.75rem;padding:1rem;margin-bottom:1rem;font-size:.88rem;color:#991b1b;">
           <strong>QR generation failed.</strong> Please try again or contact support.
         </div>
@@ -1159,10 +1191,16 @@ if ($step === 3 && $booking) {
           .then(r => r.json())
           .then(data => {
             if (data.success) { window.location.reload(); }
-            else { alert('Error: ' + (data.error || 'Unknown')); btn.textContent = 'Generate QR Code'; btn.disabled = false; }
-          });
+            else {
+              var errBox = document.getElementById('qr-error-detail');
+              if (errBox) errBox.textContent = data.error || 'Unknown error';
+              btn.textContent = '🔄 Generate QR Code'; btn.disabled = false;
+            }
+          })
+          .catch(function() { btn.textContent = '🔄 Generate QR Code'; btn.disabled = false; });
         }
         </script>
+        <div id="qr-error-detail" style="margin-top:.75rem;font-size:.8rem;color:#7f1d1d;font-family:monospace;word-break:break-all;"></div>
       <?php endif; ?>
 
       <div style="color:#64748b;font-size:.85rem;margin:.75rem 0 .35rem;">Reference Number</div>
