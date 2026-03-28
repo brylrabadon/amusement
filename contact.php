@@ -16,44 +16,59 @@ $flash = flash_get();
 <head>
   <meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Contact Us - AmusePark</title>
-  <link rel="stylesheet" href="css/style.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css?v=1.1" />
   <style>
-    body { background: #f9fafb; }
-    .contact-grid {
-      max-width: 1000px; margin: 3rem auto; padding: 0 1.5rem;
-      display: grid; grid-template-columns: 2fr 1.1fr; gap: 2rem;
+    :root {
+      --primary: #1e3a8a;
+      --primary-dark: #172554;
+      --secondary: #fbbf24;
+      --secondary-dark: #f59e0b;
+      --dark: #0f172a;
+      --light: #f8fafc;
     }
-    .contact-form-card { background: #fff; border-radius: 1.25rem; padding: 2.5rem; box-shadow: 0 2px 16px rgba(0,0,0,.07); }
-    .contact-form-card h2 { font-size: 1.6rem; font-weight: 900; color: #111827; margin-bottom: .4rem; }
-    .contact-form-card .sub { color: #6b7280; font-size: .95rem; margin-bottom: 2rem; }
-    .contact-form-card label { color: #374151; font-weight: 700; font-size: .88rem; }
+    body { background: var(--light); font-family: 'Poppins', sans-serif; }
+    .contact-grid {
+      max-width: 1100px; margin: 4rem auto; padding: 0 1.5rem;
+      display: grid; grid-template-columns: 1.5fr 1fr; gap: 3rem;
+    }
+    .contact-form-card { background: #fff; border-radius: 1.5rem; padding: 3rem; box-shadow: 0 10px 25px rgba(0,0,0,0.05); border: 1px solid #e2e8f0; }
+    .contact-form-card h2 { font-size: 2rem; font-weight: 800; color: var(--text-dark); margin-bottom: .5rem; }
+    .contact-form-card .sub { color: var(--text-muted); font-size: 1rem; margin-bottom: 2.5rem; }
+    .contact-form-card label { color: var(--text-dark); font-weight: 700; font-size: .9rem; margin-bottom: .5rem; display: block; }
     .contact-form-card input,
     .contact-form-card textarea {
-      background: #f9fafb; border: 1.5px solid #e5e7eb;
-      border-radius: .6rem; padding: .7rem 1rem; font-size: .95rem; width: 100%;
+      background: var(--bg-light); border: 1.5px solid #e2e8f0;
+      border-radius: 12px; padding: .85rem 1.25rem; font-size: .95rem; width: 100%; transition: all .3s; font-family: inherit;
     }
     .contact-form-card input:focus,
-    .contact-form-card textarea:focus { border-color: #7c3aed; outline: none; background: #fff; }
-    .contact-form-card .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+    .contact-form-card textarea:focus { border-color: var(--primary); outline: none; box-shadow: 0 0 0 4px rgba(30, 58, 138, 0.1); background: #fff; }
+    .contact-form-card .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-bottom: 1.5rem; }
     .contact-submit {
-      width: 100%; padding: .9rem; border-radius: 999px;
-      background: #7c3aed; color: #fff; font-weight: 800; font-size: 1rem;
-      border: none; cursor: pointer; transition: background .2s;
-      margin-top: .5rem;
+      width: 100%; padding: 1.1rem; border-radius: 15px;
+      background: var(--primary); color: #fff; font-weight: 800; font-size: 1.1rem;
+      border: none; cursor: pointer; transition: all .3s;
+      margin-top: 1rem; box-shadow: 0 10px 20px rgba(30, 58, 138, 0.2);
     }
-    .contact-submit:hover { background: #6d28d9; }
+    .contact-submit:hover { background: var(--primary-dark); transform: translateY(-3px); }
 
     .contact-sidebar {
-      background: #111827; color: #fff;
-      border-radius: 1.25rem; padding: 2.5rem 2rem;
-      height: fit-content;
+      background: var(--primary-dark); color: #fff;
+      border-radius: 1.5rem; padding: 3rem 2.5rem;
+      height: fit-content; position: relative; overflow: hidden;
     }
-    .contact-sidebar h3 { color: #facc15; font-size: 1.3rem; font-weight: 800; margin-bottom: 1.75rem; }
-    .info-item { margin-bottom: 1.75rem; }
-    .info-item strong { display: block; color: #facc15; font-size: .75rem; text-transform: uppercase; letter-spacing: .1em; margin-bottom: .4rem; }
-    .info-item p { color: #d1d5db; font-size: .9rem; line-height: 1.65; margin: 0; }
+    .contact-sidebar::before {
+      content: ''; position: absolute; inset: 0;
+      background: url('https://www.transparenttextures.com/patterns/cubes.png'); opacity: 0.1;
+    }
+    .contact-sidebar h3 { color: var(--secondary); font-size: 1.5rem; font-weight: 800; margin-bottom: 2rem; position: relative; }
+    .info-item { margin-bottom: 2rem; position: relative; }
+    .info-item strong { display: block; color: var(--secondary); font-size: .8rem; text-transform: uppercase; letter-spacing: .15em; margin-bottom: .5rem; }
+    .info-item p { color: rgba(255,255,255,0.8); font-size: 1rem; line-height: 1.7; margin: 0; font-weight: 500; }
 
-    @media (max-width: 768px) {
+    @media (max-width: 992px) {
       .contact-grid { grid-template-columns: 1fr; }
     }
   </style>

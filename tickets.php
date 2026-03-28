@@ -376,246 +376,270 @@ if ($step === 3 && $booking) {
   <title>Buy Tickets - AmusePark</title>
   <link rel="stylesheet" href="css/style.css" />
   <style>
-    /* ── Tickets page theme (light + purple) ── */
-    body.tickets-page { background: #f9fafb; color: #111827; }
+    /* ── Tickets page theme (Dark Blue + Yellow) ── */
+    :root {
+      --primary: #1e3a8a;
+      --primary-dark: #172554;
+      --secondary: #fbbf24;
+      --secondary-dark: #f59e0b;
+      --dark: #0f172a;
+      --light: #f8fafc;
+    }
+    body.tickets-page { background: var(--light); color: var(--dark); font-family: 'Poppins', sans-serif; }
 
     .tk-hero {
-      background: linear-gradient(135deg, #7c3aed 0%, #a855f7 55%, #ec4899 100%);
-      padding: 5rem 2rem 4rem;
+      background: linear-gradient(135deg, var(--dark) 0%, var(--primary-dark) 100%);
+      padding: 6rem 2rem 5rem;
       text-align: center;
+      position: relative;
+      overflow: hidden;
+    }
+    .tk-hero::before {
+      content: ''; position: absolute; inset: 0;
+      background: url('https://www.transparenttextures.com/patterns/cubes.png'); opacity: 0.1;
     }
     .tk-hero h1 {
-      font-size: clamp(2.2rem, 6vw, 4rem);
-      font-weight: 900;
+      font-size: clamp(2.5rem, 6vw, 4.5rem);
+      font-weight: 800;
       color: #fff;
-      letter-spacing: -.02em;
+      letter-spacing: -0.02em;
       line-height: 1.1;
-      margin-bottom: .75rem;
+      margin-bottom: 1.5rem;
+      position: relative;
     }
-    .tk-hero h1 span { color: #facc15; }
-    .tk-hero p { color: #e9d5ff; font-size: 1.1rem; max-width: 520px; margin: 0 auto; }
+    .tk-hero h1 span { color: var(--secondary); }
+    .tk-hero p { color: rgba(255,255,255,0.7); font-size: 1.2rem; max-width: 700px; margin: 0 auto; position: relative; line-height: 1.6; }
 
-    .tk-wrap { max-width: 820px; margin: 0 auto; padding: 3rem 1.5rem; }
+    .tk-wrap { max-width: 1000px; margin: 0 auto; padding: 4rem 1.5rem; }
 
-    /* Stepper dark */
-    .tk-stepper { display: flex; align-items: center; margin-bottom: 2.5rem; }
-    .tk-step { display: flex; align-items: center; gap: .5rem; flex: 1; }
+    /* Stepper */
+    .tk-stepper { display: flex; align-items: center; margin-bottom: 4rem; }
+    .tk-step { display: flex; align-items: center; gap: .75rem; flex: 1; }
     .tk-step-num {
-      width: 34px; height: 34px; border-radius: 50%;
-      border: 2px solid #e5e7eb;
+      width: 40px; height: 40px; border-radius: 50%;
+      border: 2px solid #e2e8f0;
       display: flex; align-items: center; justify-content: center;
-      font-weight: 700; font-size: .85rem; color: #9ca3af; flex-shrink: 0;
+      font-weight: 700; font-size: .95rem; color: var(--text-muted); flex-shrink: 0;
+      background: #fff;
     }
-    .tk-step.active .tk-step-num { border-color: #7c3aed; color: #7c3aed; }
-    .tk-step.done .tk-step-num { background: #7c3aed; border-color: #7c3aed; color: #fff; }
-    .tk-step-label { font-size: .8rem; font-weight: 600; color: #9ca3af; }
-    .tk-step.active .tk-step-label { color: #7c3aed; }
-    .tk-step.done .tk-step-label { color: #6b7280; }
-    .tk-step-line { flex: 1; height: 2px; background: #e5e7eb; margin: 0 .5rem; }
-    .tk-step-line.done { background: #7c3aed; }
+    .tk-step.active .tk-step-num { border-color: var(--primary); color: var(--primary); }
+    .tk-step.done .tk-step-num { background: var(--primary); border-color: var(--primary); color: #fff; }
+    .tk-step-label { font-size: .9rem; font-weight: 600; color: var(--text-muted); }
+    .tk-step.active .tk-step-label { color: var(--primary); }
+    .tk-step.done .tk-step-label { color: var(--text-dark); }
+    .tk-step-line { flex: 1; height: 2px; background: #e2e8f0; margin: 0 1rem; }
+    .tk-step-line.done { background: var(--primary); }
 
     /* Flash */
     .tk-flash {
-      padding: 1rem 1.25rem; border-radius: .75rem; margin-bottom: 1.5rem;
-      font-weight: 600; font-size: .95rem;
+      padding: 1.25rem 1.5rem; border-radius: 1rem; margin-bottom: 2rem;
+      font-weight: 600; font-size: 1rem; border: 1px solid transparent;
     }
-    .tk-flash.error { background: #fee2e2; border: 1px solid #fca5a5; color: #991b1b; }
-    .tk-flash.success { background: #dcfce7; border: 1px solid #86efac; color: #166534; }
+    .tk-flash.error { background: #fee2e2; border-color: #fecaca; color: #991b1b; }
+    .tk-flash.success { background: #dcfce7; border-color: #bbf7d0; color: #166534; }
 
     /* Ticket card row */
     .tk-card {
       background: #fff;
-      border: 2px solid #f3f4f6;
-      border-radius: 1rem;
-      padding: 1.75rem 2rem;
+      border: 2px solid #e2e8f0;
+      border-radius: 2.5rem;
+      padding: 2.25rem 3rem;
       display: flex;
       justify-content: space-between;
       align-items: center;
-      gap: 1.5rem;
+      gap: 2rem;
       cursor: pointer;
-      transition: border-color .2s, box-shadow .2s, transform .15s;
-      margin-bottom: 1rem;
+      transition: all .4s cubic-bezier(0.4, 0, 0.2, 1);
+      margin-bottom: 1.5rem;
     }
-    .tk-card:hover { border-color: #c4b5fd; box-shadow: 0 8px 32px rgba(124,58,237,.1); transform: translateY(-2px); }
-    .tk-card.selected { border-color: #7c3aed; box-shadow: 0 0 0 3px rgba(124,58,237,.12); }
+    .tk-card:hover { border-color: var(--primary); box-shadow: 0 20px 40px rgba(30, 58, 138, 0.08); transform: translateY(-4px); }
+    .tk-card.selected { border-color: var(--primary); background: #eff6ff; box-shadow: 0 0 0 4px rgba(30, 58, 138, 0.1); }
     .tk-card-left { flex: 1; }
-    .tk-card-name { font-size: 1.4rem; font-weight: 900; color: #111827; margin-bottom: .35rem; }
-    .tk-card-desc { color: #6b7280; font-size: .95rem; margin-bottom: .75rem; }
-    .tk-card-rides { display: flex; flex-wrap: wrap; gap: .35rem; margin-top: .5rem; }
-    .tk-ride-badge {
-      background: #f3e8ff; color: #7c3aed;
-      border: 1px solid #e9d5ff;
-      border-radius: .4rem; padding: .2rem .6rem; font-size: .78rem; font-weight: 600;
-    }
-    .tk-card-right { text-align: center; flex-shrink: 0; }
-    .tk-price { font-size: 2.5rem; font-weight: 900; color: #7c3aed; line-height: 1; }
-    .tk-price-label { font-size: .8rem; color: #9ca3af; margin-top: .25rem; }
+    .tk-card-name { font-size: 1.6rem; font-weight: 800; color: var(--dark); margin-bottom: .5rem; }
+    .tk-card-desc { color: #64748b; font-size: .95rem; margin-bottom: 1rem; line-height: 1.6; }
+    
+    .tk-card-right { text-align: right; flex-shrink: 0; }
+    .tk-price { font-size: 3rem; font-weight: 800; color: var(--primary); line-height: 1; }
+    .tk-price-label { font-size: .9rem; color: #64748b; margin-top: .5rem; font-weight: 600; }
+    
     .tk-buy-btn {
-      display: block; margin-top: 1rem;
-      background: #facc15; color: #000;
-      font-weight: 800; font-size: .9rem;
-      padding: .65rem 1.75rem; border-radius: 999px;
+      display: block; margin-top: 1.25rem; width: 100%;
+      background: var(--secondary); color: #000;
+      font-weight: 800; font-size: 1rem;
+      padding: .9rem 2.5rem; border-radius: 12px;
       border: none; cursor: pointer;
-      transition: background .2s, transform .15s;
+      transition: all .3s;
       white-space: nowrap;
+      box-shadow: 0 8px 15px rgba(251, 191, 36, 0.2);
     }
-    .tk-buy-btn:hover { background: #fbbf24; transform: scale(1.04); }
+    .tk-buy-btn:hover { background: var(--secondary-dark); transform: scale(1.02); }
+    
     .tk-cart-add-btn {
-      display: block; margin-top: .5rem; width: 100%;
-      background: #fff; color: #7c3aed;
-      font-weight: 700; font-size: .85rem;
-      padding: .55rem 1.25rem; border-radius: 999px;
-      border: 2px solid #7c3aed; cursor: pointer;
-      transition: background .2s, color .2s, transform .15s;
+      display: block; margin-top: .75rem; width: 100%;
+      background: transparent; color: var(--primary);
+      font-weight: 700; font-size: .9rem;
+      padding: .75rem 1.5rem; border-radius: 12px;
+      border: 2.5px solid var(--primary); cursor: pointer;
+      transition: all .3s;
       white-space: nowrap;
     }
-    .tk-cart-add-btn:hover { background: #7c3aed; color: #fff; transform: scale(1.04); }
-    .tk-cart-add-btn.added { background: #dcfce7; color: #16a34a; border-color: #86efac; }
+    .tk-cart-add-btn:hover { background: var(--primary); color: #fff; transform: scale(1.02); }
+    .tk-cart-add-btn.added { background: #dcfce7; color: #166534; border-color: #bbf7d0; }
 
     /* Qty + total */
     .tk-qty-box {
-      background: #fff; border: 1px solid #e5e7eb;
-      border-radius: 1rem; padding: 1.5rem 2rem;
+      background: #fff; border: 1px solid #e2e8f0;
+      border-radius: 999px; padding: 1.5rem 2.5rem;
       display: flex; align-items: center; gap: 1.5rem;
       margin-bottom: 1.5rem;
     }
-    .tk-qty-box label { color: #6b7280; font-size: .9rem; font-weight: 600; }
+    .tk-qty-box label { color: var(--text-muted); font-size: .9rem; font-weight: 600; }
     .tk-qty-box input[type=number] {
-      background: #f9fafb; border: 1.5px solid #e5e7eb; color: #111827;
-      border-radius: .6rem; padding: .6rem 1rem; font-size: 1rem; width: 110px;
+      background: var(--bg-light); border: 1.5px solid #e2e8f0; color: var(--text-dark);
+      border-radius: 999px; padding: .6rem 1.25rem; font-size: 1rem; width: 110px;
     }
-    .tk-qty-box input[type=number]:focus { border-color: #7c3aed; outline: none; }
+    .tk-qty-box input[type=number]:focus { border-color: var(--primary); outline: none; }
     .tk-total-wrap { margin-left: auto; text-align: right; }
-    .tk-total-label { font-size: .8rem; color: #9ca3af; }
-    .tk-total-amount { font-size: 2rem; font-weight: 900; color: #7c3aed; }
+    .tk-total-label { font-size: .9rem; color: var(--text-muted); font-weight: 600; }
+    .tk-total-amount { font-size: 2.25rem; font-weight: 800; color: var(--primary); }
 
     /* Continue btn */
     .tk-continue-btn {
-      width: 100%; padding: 1rem; border-radius: 999px;
-      background: #7c3aed; color: #fff; font-weight: 900; font-size: 1.05rem;
-      border: none; cursor: pointer; transition: background .2s, transform .15s;
-      letter-spacing: .02em;
+      width: 100%; padding: 1.25rem; border-radius: 999px;
+      background: var(--primary); color: #ffffff; font-weight: 800; font-size: 1.15rem;
+      border: none; cursor: pointer; transition: all .3s;
+      letter-spacing: .02em; box-shadow: 0 10px 25px rgba(30, 58, 138, 0.25);
     }
-    .tk-continue-btn:hover { background: #6d28d9; transform: translateY(-1px); }
+    .tk-continue-btn:hover { background: var(--primary-dark); transform: translateY(-3px); box-shadow: 0 20px 45px rgba(30, 58, 138, 0.3); }
 
     /* Dark form card */
     .tk-form-card {
-      background: #fff; border: 1px solid #e5e7eb;
-      border-radius: 1rem; padding: 1.75rem 2rem; margin-bottom: 1.5rem;
+      background: #fff; border: 1px solid #e2e8f0;
+      border-radius: 1.5rem; padding: 2rem 2.5rem; margin-bottom: 2rem;
+      box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
     }
-    .tk-form-card label { color: #374151; font-size: .88rem; font-weight: 600; display: block; margin-bottom: .35rem; }
+    .tk-form-card label { color: var(--text-dark); font-size: .9rem; font-weight: 700; display: block; margin-bottom: .5rem; }
     .tk-form-card input, .tk-form-card select {
-      background: #f9fafb; border: 1.5px solid #e5e7eb; color: #111827;
-      border-radius: .6rem; padding: .65rem 1rem; font-size: .95rem; width: 100%;
+      background: var(--bg-light); border: 1.5px solid #e2e8f0; color: var(--text-dark);
+      border-radius: 999px; padding: .75rem 1.5rem; font-size: 1rem; width: 100%; font-family: inherit; transition: all .3s;
     }
-    .tk-form-card input:focus, .tk-form-card select:focus { border-color: #7c3aed; outline: none; }
-    .tk-form-card .form-group { margin-bottom: 1rem; }
+    .tk-form-card input:focus, .tk-form-card select:focus { border-color: var(--primary); outline: none; box-shadow: 0 0 0 4px rgba(30, 58, 138, 0.1); }
+    .tk-form-card .form-group { margin-bottom: 1.5rem; }
 
     /* Summary mini card */
     .tk-summary {
-      background: #faf5ff; border: 1px solid #e9d5ff;
-      border-radius: 1rem; padding: 1.25rem 1.75rem;
+      background: #eff6ff; border: 1px solid #dbeafe;
+      border-radius: 999px; padding: 1.5rem 3rem;
       display: flex; justify-content: space-between; align-items: center;
-      margin-bottom: 1.5rem;
+      margin-bottom: 2rem;
     }
-    .tk-summary-name { font-weight: 700; color: #111827; }
-    .tk-summary-sub { color: #9ca3af; font-size: .85rem; }
-    .tk-summary-price { font-size: 1.6rem; font-weight: 900; color: #7c3aed; }
+    .tk-summary-name { font-weight: 800; color: var(--text-dark); font-size: 1.1rem; }
+    .tk-summary-sub { color: var(--text-muted); font-size: .9rem; font-weight: 500; }
+    .tk-summary-price { font-size: 2rem; font-weight: 800; color: var(--primary); }
 
     /* Action row */
-    .tk-action-row { display: flex; gap: .75rem; }
+    .tk-action-row { display: flex; gap: 1rem; }
     .tk-back-btn {
-      flex: 1; padding: .85rem; border-radius: 999px;
-      background: transparent; border: 2px solid #e5e7eb; color: #6b7280;
-      font-weight: 700; font-size: .95rem; cursor: pointer; transition: border-color .2s, color .2s;
+      flex: 1; padding: 1rem; border-radius: 999px;
+      background: transparent; border: 2.5px solid #e2e8f0; color: #475569;
+      font-weight: 700; font-size: 1rem; cursor: pointer; transition: all .3s;
       text-align: center; text-decoration: none; display: flex; align-items: center; justify-content: center;
     }
-    .tk-back-btn:hover { border-color: #7c3aed; color: #7c3aed; }
+    .tk-back-btn:hover { border-color: var(--primary); color: var(--primary); background: #f8fafc; }
     .tk-primary-btn {
-      flex: 1; padding: .85rem; border-radius: 999px;
-      background: #7c3aed; color: #fff; font-weight: 900; font-size: .95rem;
-      border: none; cursor: pointer; transition: background .2s;
+      flex: 1; padding: 1rem; border-radius: 999px;
+      background: var(--primary); color: #fff; font-weight: 800; font-size: 1rem;
+      border: none; cursor: pointer; transition: all .3s;
+      box-shadow: 0 10px 20px rgba(30, 58, 138, 0.2);
     }
-    .tk-primary-btn:hover { background: #6d28d9; }
+    .tk-primary-btn:hover { background: var(--primary-dark); transform: translateY(-2px); }
 
     /* Payment step */
     .tk-payment-card {
-      background: #fff; border: 1px solid #e5e7eb;
-      border-radius: 1rem; padding: 2rem; text-align: center; margin-bottom: 1.5rem;
+      background: #fff; border: 1px solid #e2e8f0;
+      border-radius: 1.5rem; padding: 3rem; text-align: center; margin-bottom: 2rem;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.05);
     }
     .tk-qr-frame {
-      border: 3px solid #7c3aed; border-radius: 1rem;
-      padding: .75rem; display: inline-block; margin-bottom: 1rem;
+      border: 4px solid var(--primary); border-radius: 2rem;
+      padding: 1.5rem; display: inline-block; margin-bottom: 1.5rem;
+      background: #fff; box-shadow: 0 15px 35px rgba(30, 58, 138, 0.1);
     }
-    .tk-ref-num { font-size: 1.5rem; font-weight: 900; color: #7c3aed; margin-bottom: 1rem; }
+    .tk-ref-num { font-size: 1.75rem; font-weight: 800; color: var(--primary); margin-bottom: 1.5rem; letter-spacing: 0.05em; }
     .tk-amount-box {
-      background: #faf5ff; border: 1px solid #e9d5ff;
-      border-radius: .75rem; padding: 1rem;
+      background: #eff6ff; border: 1px solid #dbeafe;
+      border-radius: 999px; padding: 1.5rem 3rem;
     }
-    .tk-amount-box .lbl { font-size: .8rem; color: #9ca3af; }
-    .tk-amount-box .val { font-size: 2.2rem; font-weight: 900; color: #7c3aed; }
+    .tk-amount-box .lbl { font-size: .9rem; color: var(--text-muted); font-weight: 600; margin-bottom: .25rem; }
+    .tk-amount-box .val { font-size: 2.5rem; font-weight: 800; color: var(--primary); }
 
     /* Countdown */
     .tk-countdown {
-      background: #fef3c7; border: 1px solid #fcd34d;
-      border-radius: .75rem; padding: .85rem 1.25rem;
-      display: flex; align-items: center; gap: .75rem; margin-bottom: 1.25rem;
+      background: #fffbeb; border: 1px solid #fde68a;
+      border-radius: 999px; padding: 1rem 2rem;
+      display: flex; align-items: center; gap: 1rem; margin-bottom: 2rem;
     }
-    .tk-countdown .timer-text { font-weight: 700; color: #92400e; font-size: .95rem; }
-    .tk-countdown .timer-sub { font-size: .8rem; color: #b45309; }
-    .tk-countdown.urgent { background: #fee2e2; border-color: #fca5a5; }
+    .tk-countdown .timer-text { font-weight: 800; color: #92400e; font-size: 1rem; }
+    .tk-countdown .timer-sub { font-size: .9rem; color: #b45309; font-weight: 500; }
+    .tk-countdown.urgent { background: #fee2e2; border-color: #fecaca; }
     .tk-countdown.urgent .timer-text { color: #991b1b; }
 
     /* How to pay */
     .tk-how-to {
-      background: #eff6ff; border: 1px solid #bfdbfe;
-      border-radius: .75rem; padding: 1rem 1.25rem; margin-bottom: 1.5rem;
-      font-size: .9rem; color: #1d4ed8;
+      background: #f0f9ff; border: 1px solid #bae6fd;
+      border-radius: 999px; padding: 1.25rem 2.5rem; margin-bottom: 2rem;
+      font-size: .95rem; color: #0369a1; line-height: 1.6;
+      text-align: center;
     }
 
     /* Confirm step */
     .tk-confirm-card {
-      background: #fff; border: 1px solid #e5e7eb;
-      border-radius: 1rem; padding: 1.5rem 2rem; margin-bottom: 1.5rem;
+      background: #fff; border: 1px solid #e2e8f0;
+      border-radius: 1.5rem; padding: 2rem 2.5rem; margin-bottom: 2rem;
     }
     .tk-confirm-row {
       display: flex; justify-content: space-between; align-items: center;
-      padding: .6rem 0; border-bottom: 1px solid #f3f4f6;
+      padding: 1rem 0; border-bottom: 1px solid #f1f5f9;
     }
     .tk-confirm-row:last-child { border-bottom: none; }
-    .tk-confirm-row .lbl { color: #9ca3af; font-size: .9rem; }
-    .tk-confirm-row .val { color: #111827; font-weight: 600; font-size: .9rem; }
+    .tk-confirm-row .lbl { color: var(--text-muted); font-size: .95rem; font-weight: 600; }
+    .tk-confirm-row .val { color: var(--text-dark); font-weight: 700; font-size: .95rem; }
 
     /* Popup overlay */
     .tk-popup-overlay {
-      position: fixed; inset: 0; background: rgba(0,0,0,.6);
+      position: fixed; inset: 0; background: rgba(15,23,42,0.7);
       z-index: 9999; display: flex; align-items: center; justify-content: center; padding: 1rem;
+      backdrop-filter: blur(8px);
     }
     .tk-popup {
-      background: #fff; border-radius: 1.25rem;
-      max-width: 560px; width: 100%;
-      max-height: 90vh; overflow-y: auto; padding: 2rem;
-      box-shadow: 0 20px 60px rgba(0,0,0,.2);
+      background: #fff; border-radius: 2rem;
+      max-width: 600px; width: 100%;
+      max-height: 90vh; overflow-y: auto; padding: 3rem;
+      box-shadow: 0 25px 50px -12px rgba(0,0,0,0.25);
     }
-    .tk-popup-header { text-align: center; margin-bottom: 1.5rem; }
-    .tk-popup-header h2 { font-size: 1.6rem; font-weight: 900; color: #7c3aed; margin: .5rem 0 .25rem; }
-    .tk-popup-header .ref { font-size: 1rem; font-weight: 700; color: #6b7280; letter-spacing: .05em; }
-    .tk-popup-grid { display: grid; grid-template-columns: 1fr 1fr; gap: .4rem .75rem; font-size: .9rem; margin-bottom: 1rem; }
-    .tk-popup-grid .lbl { color: #9ca3af; }
-    .tk-popup-grid .val { color: #111827; font-weight: 600; }
+    .tk-popup-header { text-align: center; margin-bottom: 2rem; }
+    .tk-popup-header h2 { font-size: 2rem; font-weight: 800; color: var(--primary); margin: .75rem 0 .5rem; }
+    .tk-popup-header .ref { font-size: 1.1rem; font-weight: 700; color: var(--text-muted); letter-spacing: .05em; }
+    .tk-popup-grid { display: grid; grid-template-columns: 1fr 1fr; gap: .75rem 1.25rem; font-size: .95rem; margin-bottom: 1.5rem; }
+    .tk-popup-grid .lbl { color: var(--text-muted); font-weight: 600; }
+    .tk-popup-grid .val { color: var(--text-dark); font-weight: 700; }
     .tk-ticket-item {
-      background: #f9fafb; border: 1px solid #e5e7eb;
-      border-radius: .75rem; padding: .75rem; display: flex; align-items: center; gap: 1rem;
-      margin-bottom: .75rem;
+      background: var(--bg-light); border: 1px solid #e2e8f0;
+      border-radius: 999px; padding: 1rem 2rem; display: flex; align-items: center; gap: 1.5rem;
+      margin-bottom: 1rem;
     }
-    .tk-ticket-item img { width: 80px; height: 80px; border-radius: .4rem; flex-shrink: 0; }
-    .tk-ticket-num { font-family: monospace; font-weight: 700; color: #7c3aed; font-size: .9rem; }
+    .tk-ticket-item img { width: 100px; height: 100px; border-radius: .75rem; flex-shrink: 0; object-fit: cover; }
+    .tk-ticket-num { font-family: monospace; font-weight: 800; color: var(--primary); font-size: 1rem; }
 
-    @media (max-width: 600px) {
-      .tk-card { flex-direction: column; align-items: flex-start; }
-      .tk-card-right { width: 100%; display: flex; align-items: center; justify-content: space-between; }
+    @media (max-width: 640px) {
+      .tk-card { flex-direction: column; align-items: flex-start; padding: 2rem; }
+      .tk-card-right { width: 100%; display: flex; align-items: center; justify-content: space-between; margin-top: 1.5rem; }
       .tk-buy-btn { margin-top: 0; }
       .tk-popup-grid { grid-template-columns: 1fr; }
+      .tk-stepper { flex-direction: column; align-items: flex-start; gap: 1rem; }
+      .tk-step-line { display: none; }
+      .tk-qty-box { flex-direction: column; align-items: flex-start; }
+      .tk-total-wrap { margin-left: 0; text-align: left; margin-top: 1rem; }
     }
   </style>
 </head>
@@ -624,10 +648,10 @@ if ($step === 3 && $booking) {
 
 <!-- HERO -->
 <div class="tk-hero">
-  <div style="display:inline-flex;align-items:center;gap:.5rem;background:#f3e8ff;border:1px solid #e9d5ff;border-radius:999px;padding:.4rem 1.1rem;margin-bottom:1.25rem;color:#7c3aed;font-size:.88rem;font-weight:600;">
+  <div style="display:inline-flex;align-items:center;gap:.6rem;background:rgba(251,191,36,0.15);border:1px solid rgba(251,191,36,0.3);border-radius:999px;padding:.5rem 1.5rem;margin-bottom:2rem;color:var(--secondary);font-size:.85rem;font-weight:700;text-transform:uppercase;letter-spacing:0.02em;backdrop-filter:blur(4px);">
     🎟 Online Booking — Skip the Queue
   </div>
-  <h1>BUY TICKETS <span>NOW!</span> 🎢🎡🎠</h1>
+  <h1>BUY TICKETS <span>NOW!</span> 🎢🎡</h1>
   <p>Get instant access to all rides. Book online and enjoy a seamless park experience.</p>
 </div>
 
@@ -685,9 +709,9 @@ if ($step === 3 && $booking) {
               <div class="tk-card-name"><?= e($t['name']) ?></div>
               <div class="tk-card-desc"><?= e($t['description'] ?? 'Full day access to all included rides') ?></div>
               <?php if (isset($t['max_rides']) && $t['max_rides'] !== null && $t['max_rides'] !== ''): ?>
-                <div style="color:#7c3aed;font-size:.85rem;font-weight:700;margin-bottom:.5rem;">🎢 Pick up to <?= (int)$t['max_rides'] ?> ride<?= (int)$t['max_rides'] === 1 ? '' : 's' ?> — you choose in the next step</div>
+                <div style="color:var(--primary);font-size:.85rem;font-weight:700;margin-bottom:.5rem;">🎢 Pick up to <?= (int)$t['max_rides'] ?> ride<?= (int)$t['max_rides'] === 1 ? '' : 's' ?> — you choose in the next step</div>
               <?php else: ?>
-                <div style="color:#7c3aed;font-size:.85rem;font-weight:700;margin-bottom:.5rem;">🎢 Unlimited rides — pick any you want</div>
+                <div style="color:var(--primary);font-size:.85rem;font-weight:700;margin-bottom:.5rem;">🎢 Unlimited rides — pick any you want</div>
               <?php endif; ?>
               <input type="radio" id="radio-<?= $tid ?>" name="ticket_type_id" value="<?= $tid ?>"
                      data-price="<?= $price ?>" <?= $isSelected ? 'checked' : '' ?>
@@ -824,20 +848,20 @@ if ($step === 3 && $booking) {
                 🎢 Select Your Rides
               </div>
               <?php if ($maxRides1 !== null): ?>
-                <div style="font-size:.88rem;color:#7c3aed;font-weight:600;margin-top:.3rem;">
+                <div style="font-size:.88rem;color:var(--primary);font-weight:700;margin-top:.3rem;">
                   Pick up to <strong><?= $maxRides1 ?></strong> ride<?= $maxRides1 === 1 ? '' : 's' ?> included in your package
                 </div>
               <?php else: ?>
-                <div style="font-size:.88rem;color:#7c3aed;font-weight:600;margin-top:.3rem;">
+                <div style="font-size:.88rem;color:var(--primary);font-weight:700;margin-top:.3rem;">
                   All rides are included — select the ones you want
                 </div>
               <?php endif; ?>
             </div>
             <?php if ($maxRides1 !== null): ?>
               <div id="ride-counter"
-                   style="background:#faf5ff;border:2px solid #e9d5ff;border-radius:.6rem;
-                          padding:.45rem 1rem;font-size:.9rem;font-weight:800;color:#7c3aed;
-                          min-width:110px;text-align:center;">
+                   style="background:#eff6ff;border:2px solid #dbeafe;border-radius:12px;
+                          padding:.5rem 1.25rem;font-size:.9rem;font-weight:800;color:var(--primary);
+                          min-width:130px;text-align:center;">
                 0 / <?= $maxRides1 ?> selected
               </div>
             <?php endif; ?>
@@ -851,7 +875,7 @@ if ($step === 3 && $booking) {
               $checked = in_array($rId, $prevSelectedRideIds, true);
               $catColors = ['Thrill'=>['bg'=>'#fee2e2','color'=>'#dc2626'],
                             'Family'=>['bg'=>'#dcfce7','color'=>'#16a34a'],
-                            'Kids'  =>['bg'=>'#f3e8ff','color'=>'#7c3aed'],
+                            'Kids'  =>['bg'=>'#eff6ff','color'=>'var(--primary)'],
                             'Water' =>['bg'=>'#dbeafe','color'=>'#1d4ed8'],
                             'Classic'=>['bg'=>'#f1f5f9','color'=>'#475569']];
               $cat      = (string)($r['category'] ?? '');
@@ -859,11 +883,11 @@ if ($step === 3 && $booking) {
             ?>
               <label class="ride-checkbox-card <?= !$isOpen ? 'ride-disabled' : '' ?>"
                      style="display:flex;flex-direction:column;gap:.5rem;
-                            background:<?= $checked ? '#faf5ff' : '#fff' ?>;
-                            border:2px solid <?= $checked ? '#7c3aed' : '#e5e7eb' ?>;
-                            border-radius:.85rem;padding:1rem;
+                            background:<?= $checked ? '#eff6ff' : '#fff' ?>;
+                            border:2px solid <?= $checked ? 'var(--primary)' : '#e2e8f0' ?>;
+                            border-radius:1rem;padding:1.25rem;
                             cursor:<?= $isOpen ? 'pointer' : 'not-allowed' ?>;
-                            transition:border-color .15s,background .15s,box-shadow .15s;
+                            transition:all .3s;
                             position:relative;opacity:<?= $isOpen ? '1' : '.55' ?>;"
                      onclick="<?= $isOpen ? '' : 'return false;' ?>">
                 <input type="checkbox"
@@ -873,117 +897,80 @@ if ($step === 3 && $booking) {
                        <?= !$isOpen ? 'disabled' : '' ?>
                        onchange="onRideChange(this)"
                        style="position:absolute;top:.75rem;right:.75rem;
-                              width:18px;height:18px;accent-color:#7c3aed;cursor:inherit;" />
-                <div style="font-weight:700;font-size:.95rem;color:<?= $isOpen ? '#111827' : '#9ca3af' ?>;
-                            padding-right:1.75rem;line-height:1.3;">
+                              width:20px;height:20px;accent-color:var(--primary);cursor:inherit;" />
+                <div style="font-weight:800;font-size:1rem;color:<?= $isOpen ? 'var(--text-dark)' : 'var(--text-muted)' ?>;
+                            padding-right:2rem;line-height:1.4;">
                   <?= e($r['name']) ?>
                 </div>
-                <div style="display:flex;align-items:center;gap:.5rem;flex-wrap:wrap;">
-                  <span style="font-size:.72rem;font-weight:700;padding:.2rem .55rem;border-radius:.35rem;
+                <div style="display:flex;align-items:center;gap:.5rem;flex-wrap:wrap;margin-top:auto;">
+                  <span style="font-size:.75rem;font-weight:800;padding:.3rem .7rem;border-radius:6px;text-transform:uppercase;
                                background:<?= $catStyle['bg'] ?>;color:<?= $catStyle['color'] ?>;">
                     <?= e($cat) ?>
                   </span>
-                  <?php if (!empty($r['duration_minutes'])): ?>
-                    <span style="font-size:.72rem;color:#6b7280;">⏱ <?= (int)$r['duration_minutes'] ?>min</span>
-                  <?php endif; ?>
-                  <?php if (!empty($r['min_height_cm'])): ?>
-                    <span style="font-size:.72rem;color:#6b7280;">📏 <?= (int)$r['min_height_cm'] ?>cm+</span>
-                  <?php endif; ?>
                 </div>
-                <?php if (!$isOpen): ?>
-                  <span style="font-size:.72rem;color:#dc2626;font-weight:700;">
-                    🚫 <?= e($r['status'] ?? 'Closed') ?>
-                  </span>
-                <?php endif; ?>
               </label>
             <?php endforeach; ?>
           </div>
 
-          <?php if ($maxRides1 !== null): ?>
-            <div id="ride-limit-warn"
-                 style="display:none;margin-top:.85rem;padding:.65rem 1rem;
-                        background:#fee2e2;border-radius:.6rem;font-size:.85rem;
-                        color:#991b1b;font-weight:600;">
-              ⚠ You can only select up to <?= $maxRides1 ?> ride<?= $maxRides1 === 1 ? '' : 's' ?> for this package.
-            </div>
-          <?php endif; ?>
-        </div>
+          <script>
+          (function() {
+            var max = <?= $maxRides1 !== null ? $maxRides1 : 'null' ?>;
 
-        <script>
-        (function() {
-          var max = <?= $maxRides1 !== null ? $maxRides1 : 'null' ?>;
+            function updateRideState() {
+              var allBoxes     = document.querySelectorAll('input[name="selected_ride_ids[]"]');
+              var checkedCount = document.querySelectorAll('input[name="selected_ride_ids[]"]:checked').length;
+              var counter      = document.getElementById('ride-counter');
+              var warn         = document.getElementById('ride-limit-warn');
 
-          function updateRideState() {
-            // Always query ALL boxes (including currently disabled ones)
-            var allBoxes     = document.querySelectorAll('input[name="selected_ride_ids[]"]');
-            var checkedCount = document.querySelectorAll('input[name="selected_ride_ids[]"]:checked').length;
-            var counter      = document.getElementById('ride-counter');
-            var warn         = document.getElementById('ride-limit-warn');
+              if (counter && max !== null) {
+                counter.textContent = checkedCount + ' / ' + max + ' selected';
+                counter.style.borderColor = checkedCount >= max ? 'var(--primary)' : '#dbeafe';
+                counter.style.background  = checkedCount >= max ? '#eff6ff' : '#f0f9ff';
+              }
 
-            // Update counter badge
-            if (counter && max !== null) {
-              counter.textContent = checkedCount + ' / ' + max + ' selected';
-              counter.style.borderColor = checkedCount >= max ? '#7c3aed' : '#e9d5ff';
-              counter.style.background  = checkedCount >= max ? '#ede9fe' : '#faf5ff';
-            }
+              if (warn) warn.style.display = (max !== null && checkedCount > max) ? 'block' : 'none';
 
-            // Show/hide over-limit warning
-            if (warn) warn.style.display = (max !== null && checkedCount > max) ? 'block' : 'none';
-
-            // Enable/disable unchecked boxes based on whether limit is reached
-            if (max !== null) {
-              allBoxes.forEach(function(box) {
-                if (box.checked) {
-                  // Always keep checked boxes enabled so user can uncheck them
-                  box.disabled = false;
-                } else {
-                  // Disable unchecked boxes only when at the limit
-                  // But respect the original "ride closed" state
-                  var isClosedRide = box.hasAttribute('data-closed');
-                  box.disabled = isClosedRide || (checkedCount >= max);
-                }
-                // Update card cursor
-                var card = box.closest('label');
-                if (card) {
-                  card.style.cursor = (box.disabled && !box.checked) ? 'not-allowed' : 'pointer';
-                  card.style.opacity = (box.disabled && !box.checked) ? '0.45' : '1';
-                }
-              });
-            }
-          }
-
-          function onRideChange(cb) {
-            // Update card visual immediately
-            var card = cb.closest('label');
-            if (card) {
-              card.style.borderColor = cb.checked ? '#7c3aed' : '#e5e7eb';
-              card.style.background  = cb.checked ? '#faf5ff' : '#fff';
-              card.style.boxShadow   = cb.checked ? '0 0 0 3px rgba(124,58,237,.1)' : 'none';
-            }
-            updateRideState();
-          }
-
-          window.onRideChange = onRideChange;
-
-          // Mark closed rides with a data attribute so we can preserve their disabled state
-          document.querySelectorAll('input[name="selected_ride_ids[]"]').forEach(function(cb) {
-            if (cb.disabled) cb.setAttribute('data-closed', '1');
-
-            // Restore visual state for pre-checked boxes (e.g. after validation error redirect)
-            if (cb.checked) {
-              var card = cb.closest('label');
-              if (card) {
-                card.style.borderColor = '#7c3aed';
-                card.style.background  = '#faf5ff';
-                card.style.boxShadow   = '0 0 0 3px rgba(124,58,237,.1)';
+              if (max !== null) {
+                allBoxes.forEach(function(box) {
+                  if (!box.checked) {
+                    var isClosedRide = box.hasAttribute('data-closed');
+                    box.disabled = isClosedRide || (checkedCount >= max);
+                  }
+                  var card = box.closest('label');
+                  if (card) {
+                    card.style.cursor = (box.disabled && !box.checked) ? 'not-allowed' : 'pointer';
+                    card.style.opacity = (box.disabled && !box.checked) ? '0.45' : '1';
+                  }
+                });
               }
             }
-          });
 
-          // Run on page load to set correct initial state
-          updateRideState();
-        })();
-        </script>
+            function onRideChange(cb) {
+              var card = cb.closest('label');
+              if (card) {
+                card.style.borderColor = cb.checked ? 'var(--primary)' : '#e2e8f0';
+                card.style.background  = cb.checked ? '#eff6ff' : '#fff';
+                card.style.boxShadow   = cb.checked ? '0 4px 15px rgba(30,58,138,0.1)' : 'none';
+              }
+              updateRideState();
+            }
+
+            window.onRideChange = onRideChange;
+
+            document.querySelectorAll('input[name="selected_ride_ids[]"]').forEach(function(cb) {
+              if (cb.disabled) cb.setAttribute('data-closed', '1');
+              if (cb.checked) {
+                var card = cb.closest('label');
+                if (card) {
+                  card.style.borderColor = 'var(--primary)';
+                  card.style.background  = '#eff6ff';
+                  card.style.boxShadow   = '0 4px 15px rgba(30,58,138,0.1)';
+                }
+              }
+            });
+            updateRideState();
+          })();
+          </script>
       <?php else: ?>
         <!-- No rides linked to this ticket type yet -->
         <div class="tk-form-card" style="margin-bottom:1.5rem;text-align:center;padding:2rem;">
@@ -1116,7 +1103,7 @@ if ($step === 3 && $booking) {
         <div style="margin-top:.75rem;font-size:.82rem;color:#6b7280;">
           QR expires in <span id="qr-timer" style="font-weight:700;color:#d97706;">30:00</span>
           &nbsp;·&nbsp;
-          <button onclick="regenerateQR()" id="regen-btn" style="background:none;border:none;color:#7c3aed;font-weight:700;cursor:pointer;font-size:.82rem;text-decoration:underline;">Regenerate QR</button>
+          <button onclick="regenerateQR()" id="regen-btn" style="background:none;border:none;color:var(--primary);font-weight:700;cursor:pointer;font-size:.82rem;text-decoration:underline;">Regenerate QR</button>
         </div>
         <script>
         (function() {
@@ -1324,13 +1311,13 @@ if ($step === 3 && $booking) {
 
     <!-- Page summary (behind popup) -->
     <div style="text-align:center;margin-bottom:2rem;">
-      <div style="width:80px;height:80px;background:#f3e8ff;border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 1.25rem;font-size:2.5rem;">✅</div>
+      <div style="width:80px;height:80px;background:#dcfce7;border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 1.25rem;font-size:2.5rem;">✅</div>
       <div style="font-size:2rem;font-weight:900;color:#111827;margin-bottom:.5rem;">Booking Confirmed!</div>
       <div style="color:#6b7280;">Your QR ticket is ready. Show it at the park entrance.</div>
     </div>
 
     <div class="tk-confirm-card">
-      <div class="tk-confirm-row"><span class="lbl">Booking Ref</span><span class="val" style="color:#7c3aed;font-weight:800;"><?= e($booking['booking_reference'] ?? '') ?></span></div>
+      <div class="tk-confirm-row"><span class="lbl">Booking Ref</span><span class="val" style="color:var(--primary);font-weight:800;"><?= e($booking['booking_reference'] ?? '') ?></span></div>
       <div class="tk-confirm-row"><span class="lbl">Customer</span><span class="val"><?= e($booking['customer_name'] ?? '') ?></span></div>
       <div class="tk-confirm-row"><span class="lbl">Ticket</span><span class="val"><?= e($booking['ticket_type_name'] ?? '') ?> × <?= (int)($booking['quantity'] ?? 1) ?></span></div>
       <div class="tk-confirm-row"><span class="lbl">Visit Date</span><span class="val"><?= e((string)($booking['visit_date'] ?? '')) ?></span></div>

@@ -62,14 +62,14 @@ try {
   <link rel="stylesheet" href="../css/style.css" />
   <style>
     body { background: #f9fafb; }
-    .dash-welcome { background: linear-gradient(135deg,#7c3aed,#a855f7); padding:2.5rem 2rem; color:#fff; }
+    .dash-welcome { background: linear-gradient(135deg, var(--dark) 0%, var(--primary-dark) 100%); padding:2.5rem 2rem; color:#fff; }
     .dash-welcome-inner { max-width:1100px; margin:0 auto; display:flex; align-items:center; justify-content:space-between; gap:1.5rem; flex-wrap:wrap; }
     .dash-welcome h1 { font-size:1.6rem; font-weight:900; margin-bottom:.25rem; }
-    .dash-welcome p  { color:#e9d5ff; font-size:.95rem; }
+    .dash-welcome p  { color:rgba(255,255,255,0.7); font-size:.95rem; }
     .dash-cta-btns { display:flex; gap:.75rem; flex-wrap:wrap; }
     .dash-cta-btns a { padding:.65rem 1.5rem; border-radius:999px; font-weight:700; font-size:.9rem; text-decoration:none; transition:all .2s; }
-    .btn-white { background:#fff; color:#7c3aed; }
-    .btn-white:hover { background:#f3e8ff; }
+    .btn-white { background:#fff; color:var(--primary); }
+    .btn-white:hover { background:#f8fafc; }
     .btn-yellow-sm { background:#facc15; color:#000; }
     .btn-yellow-sm:hover { background:#fbbf24; }
     .dash-body { max-width:1100px; margin:2.5rem auto; padding:0 1.5rem; }
@@ -77,29 +77,29 @@ try {
 
     /* Package card */
     .pkg-card { background:#fff; border:2px solid #f3f4f6; border-radius:1.25rem; overflow:hidden; box-shadow:0 2px 12px rgba(0,0,0,.06); display:flex; flex-direction:column; }
-    .pkg-header { background:linear-gradient(135deg,#7c3aed,#a855f7); padding:1.4rem 1.75rem; display:flex; justify-content:space-between; align-items:flex-start; }
+    .pkg-header { background: linear-gradient(135deg, var(--dark) 0%, var(--primary-dark) 100%); padding:1.4rem 1.75rem; display:flex; justify-content:space-between; align-items:flex-start; }
     .pkg-header h3 { font-size:1.15rem; font-weight:900; color:#fff; margin-bottom:.15rem; }
-    .pkg-cat { font-size:.72rem; color:#e9d5ff; font-weight:600; text-transform:uppercase; letter-spacing:.06em; }
+    .pkg-cat { font-size:.72rem; color:rgba(255,255,255,0.7); font-weight:600; text-transform:uppercase; letter-spacing:.06em; }
     .pkg-price .amount { font-size:1.9rem; font-weight:900; color:#facc15; line-height:1; }
     .pkg-price .per { font-size:.75rem; color:rgba(255,255,255,.7); text-align:right; }
     .pkg-body { padding:1.4rem 1.75rem; flex:1; display:flex; flex-direction:column; }
     .pkg-desc { color:#6b7280; font-size:.88rem; margin-bottom:1rem; }
 
-    .allowance-badge { display:inline-flex; align-items:center; gap:.5rem; background:#faf5ff; border:1.5px solid #e9d5ff; border-radius:.6rem; padding:.5rem .9rem; margin-bottom:1.25rem; }
-    .allowance-badge .atext { font-size:.88rem; font-weight:700; color:#7c3aed; }
+    .allowance-badge { display:inline-flex; align-items:center; gap:.5rem; background:#eff6ff; border:1.5px solid #dbeafe; border-radius:.6rem; padding:.5rem .9rem; margin-bottom:1.25rem; }
+    .allowance-badge .atext { font-size:.88rem; font-weight:700; color:var(--primary); }
     .allowance-badge .asub  { font-size:.75rem; color:#9ca3af; display:block; font-weight:400; }
 
     /* Ride checklist inside form */
     .rides-label { font-size:.72rem; font-weight:700; color:#9ca3af; text-transform:uppercase; letter-spacing:.08em; margin-bottom:.5rem; }
-    .ride-counter-badge { display:inline-block; background:#faf5ff; border:1.5px solid #e9d5ff; border-radius:.5rem; padding:.3rem .75rem; font-size:.82rem; font-weight:700; color:#7c3aed; margin-bottom:.6rem; }
+    .ride-counter-badge { display:inline-block; background:#eff6ff; border:1.5px solid #dbeafe; border-radius:.5rem; padding:.3rem .75rem; font-size:.82rem; font-weight:700; color:var(--primary); margin-bottom:.6rem; }
     .ride-counter-badge.over { background:#fee2e2; border-color:#fca5a5; color:#dc2626; }
 
-    .rides-checklist-box { border:1.5px solid #e9d5ff; border-radius:.75rem; overflow:hidden; margin-bottom:1rem; }
-    .ride-row { display:flex; align-items:center; gap:.75rem; padding:.75rem 1rem; background:#fff; border-bottom:1px solid #f3e8ff; cursor:pointer; transition:background .15s; }
+    .rides-checklist-box { border:1.5px solid #dbeafe; border-radius:.75rem; overflow:hidden; margin-bottom:1rem; }
+    .ride-row { display:flex; align-items:center; gap:.75rem; padding:.75rem 1rem; background:#fff; border-bottom:1px solid #eff6ff; cursor:pointer; transition:background .15s; }
     .ride-row:last-child { border-bottom:none; }
-    .ride-row:hover { background:#faf5ff; }
+    .ride-row:hover { background:#f8fafc; }
     .ride-row.disabled-row { cursor:not-allowed; opacity:.6; }
-    .ride-row input[type=checkbox] { width:16px; height:16px; accent-color:#7c3aed; flex-shrink:0; }
+    .ride-row input[type=checkbox] { width:16px; height:16px; accent-color:var(--primary); flex-shrink:0; }
     .ride-row .rdot { width:7px; height:7px; border-radius:50%; flex-shrink:0; }
     .ride-row .rname { flex:1; font-size:.9rem; font-weight:600; color:#111827; }
     .ride-row .rcat { font-size:.72rem; font-weight:700; padding:.2rem .5rem; border-radius:.35rem; }
@@ -107,9 +107,9 @@ try {
 
     /* Save + Book buttons */
     .pkg-actions { display:flex; gap:.6rem; margin-top:auto; padding-top:.75rem; }
-    .btn-save-rides { flex:1; padding:.65rem; border-radius:999px; background:#f3e8ff; color:#7c3aed; border:1.5px solid #e9d5ff; font-weight:700; font-size:.88rem; cursor:pointer; transition:all .2s; }
+    .btn-save-rides { flex:1; padding:.65rem; border-radius:999px; background:#eff6ff; color:var(--primary); border:1.5px solid #dbeafe; font-weight:700; font-size:.88rem; cursor:pointer; transition:all .2s; }
     .btn-save-rides:hover { background:#ede9fe; }
-    .btn-book-pkg { flex:1; padding:.65rem; border-radius:999px; background:#7c3aed; color:#fff; border:none; font-weight:800; font-size:.88rem; cursor:pointer; transition:background .2s; text-decoration:none; text-align:center; display:flex; align-items:center; justify-content:center; }
+    .btn-book-pkg { flex:1; padding:.65rem; border-radius:999px; background:var(--primary); color:#fff; border:none; font-weight:800; font-size:.88rem; cursor:pointer; transition:background .2s; text-decoration:none; text-align:center; display:flex; align-items:center; justify-content:center; }
     .btn-book-pkg:hover { background:#6d28d9; }
 
     /* Saved indicator */
@@ -118,7 +118,7 @@ try {
 
     /* Recent bookings */
     .booking-row { background:#fff; border:1px solid #f3f4f6; border-radius:.75rem; padding:1rem 1.25rem; display:flex; align-items:center; justify-content:space-between; gap:1rem; flex-wrap:wrap; margin-bottom:.75rem; }
-    .booking-ref  { font-family:monospace; font-weight:700; color:#7c3aed; font-size:.9rem; }
+    .booking-ref  { font-family:monospace; font-weight:700; color:var(--primary); font-size:.9rem; }
     .booking-meta { color:#6b7280; font-size:.85rem; }
   </style>
 </head>
@@ -177,7 +177,7 @@ try {
             $allowSub  = 'Access to all available rides';
         }
 
-        $catBg = ['Thrill'=>'#fee2e2','Family'=>'#dcfce7','Kids'=>'#f3e8ff','Water'=>'#dbeafe','Classic'=>'#f1f5f9'];
+        $catBg = ['Thrill'=>'#fee2e2','Family'=>'#dcfce7','Kids'=>'#eff6ff','Water'=>'#dbeafe','Classic'=>'#f1f5f9'];
       ?>
         <div class="pkg-card">
           <div class="pkg-header">

@@ -29,64 +29,74 @@ $st = $pdo->prepare($sql);
 $st->execute($params);
 $rides = $st->fetchAll();
 
-$catColors = ['Thrill'=>'badge-red','Family'=>'badge-green','Kids'=>'badge-purple','Water'=>'badge-blue','Classic'=>'badge-gray'];
-$statusDot = ['Open'=>'#16a34a','Closed'=>'#dc2626','Maintenance'=>'#ca8a04'];
+$catColors = ['Thrill'=>'badge-red','Family'=>'badge-green','Kids'=>'badge-blue','Water'=>'badge-blue','Classic'=>'badge-gray'];
+$statusDot = ['Open'=>'#10b981','Closed'=>'#ef4444','Maintenance'=>'#f59e0b'];
 $cats      = ['All','Thrill','Family','Kids','Water','Classic'];
 ?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Rides - AmusePark</title>
-  <link rel="stylesheet" href="css/style.css" />
+  <title>Explore Rides - AmusePark</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css?v=1.1" />
   <style>
-    body { background: #f9fafb; }
+    :root {
+      --primary: #1e3a8a;
+      --primary-dark: #172554;
+      --secondary: #fbbf24;
+      --secondary-dark: #f59e0b;
+      --dark: #0f172a;
+      --light: #f8fafc;
+    }
+    body { background: var(--light); font-family: 'Poppins', sans-serif; }
     .rides-filter-bar {
-      background: #fff; border-bottom: 1px solid #e5e7eb;
-      padding: 1.25rem 0; margin-bottom: 2rem;
+      background: #fff; border-bottom: 1px solid #e2e8f0;
+      padding: 1.5rem 0; margin-bottom: 3rem; box-shadow: 0 4px 12px rgba(0,0,0,0.02);
     }
     .rides-filter-inner {
-      max-width: 1100px; margin: 0 auto; padding: 0 1.5rem;
-      display: flex; gap: 1rem; flex-wrap: wrap; align-items: center;
+      max-width: 1200px; margin: 0 auto; padding: 0 1.5rem;
+      display: flex; gap: 1.25rem; flex-wrap: wrap; align-items: center;
     }
     .rides-filter-inner input {
-      flex: 1; min-width: 200px;
-      border: 1.5px solid #e5e7eb; border-radius: 999px;
-      padding: .6rem 1.2rem; font-size: .9rem;
+      flex: 1; min-width: 250px;
+      border: 1.5px solid #e2e8f0; border-radius: 12px;
+      padding: .75rem 1.25rem; font-size: .95rem; transition: all .3s;
     }
-    .rides-filter-inner input:focus { border-color: #7c3aed; outline: none; }
+    .rides-filter-inner input:focus { border-color: var(--primary); outline: none; box-shadow: 0 0 0 4px rgba(30, 58, 138, 0.1); }
     .rides-filter-inner select {
-      border: 1.5px solid #e5e7eb; border-radius: 999px;
-      padding: .6rem 1.2rem; font-size: .9rem; background: #fff;
+      border: 1.5px solid #e2e8f0; border-radius: 12px;
+      padding: .75rem 1.25rem; font-size: .95rem; background: #fff; cursor: pointer; transition: all .3s;
     }
-    .rides-filter-inner select:focus { border-color: #7c3aed; outline: none; }
-    .ride-price { font-weight: 800; color: #7c3aed; }
+    .rides-filter-inner select:focus { border-color: var(--primary); outline: none; }
     .ride-book-btn {
-      display: block; width: 100%; padding: .65rem;
-      background: #7c3aed; color: #fff; border: none;
-      border-radius: 999px; font-weight: 700; font-size: .9rem;
-      text-align: center; text-decoration: none; cursor: pointer;
-      transition: background .2s;
+      display: inline-flex; width: 100%; padding: .85rem;
+      background: var(--primary) !important; color: #fff !important; border: none;
+      border-radius: 12px; font-weight: 700; font-size: .95rem;
+      text-align: center; justify-content: center; text-decoration: none; cursor: pointer;
+      transition: all .3s; box-shadow: 0 4px 12px rgba(30, 58, 138, 0.2);
     }
-    .ride-book-btn:hover { background: #6d28d9; }
-    .ride-book-btn.disabled { background: #e5e7eb; color: #9ca3af; pointer-events: none; }
+    .ride-book-btn:hover { background: var(--primary-dark); transform: translateY(-2px); color: #fff; }
+    .ride-book-btn.disabled { background: #e2e8f0; color: #94a3b8; pointer-events: none; box-shadow: none; }
   </style>
 </head>
 <body>
 <?php render_nav($user, 'rides'); ?>
 
-<?php render_page_header('Our Rides', 'Discover all our thrilling attractions'); ?>
+<?php render_page_header('Explore Our Rides', 'Experience the thrill of AmusePark'); ?>
 
 <div class="rides-filter-bar">
   <form class="rides-filter-inner" method="get">
-    <input type="text" name="q" value="<?= e($q) ?>" placeholder="🔍 Search rides..." />
+    <input type="text" name="q" value="<?= e($q) ?>" placeholder="🔍 Search rides by name or description..." />
     <select name="cat">
       <?php foreach ($cats as $c): ?>
         <option value="<?= e($c) ?>" <?= $cat === $c ? 'selected' : '' ?>><?= e($c) ?></option>
       <?php endforeach; ?>
     </select>
-    <button class="btn btn-primary btn-sm" type="submit" style="border-radius:999px;padding:.6rem 1.4rem;">Filter</button>
-    <a class="btn btn-outline btn-sm" href="rides.php" style="border-radius:999px;padding:.6rem 1.4rem;">Reset</a>
+    <button class="btn btn-primary" type="submit" style="padding:.75rem 1.5rem;">Filter</button>
+    <a class="btn btn-outline" href="rides.php" style="padding:.75rem 1.5rem;">Reset</a>
   </form>
 </div>
 

@@ -118,18 +118,31 @@ $flash = flash_get();
   <title>Cart - AmusePark</title>
   <link rel="stylesheet" href="css/style.css"/>
   <style>
-    body { background: #f9fafb; }
+    :root {
+      --primary: #1e3a8a;
+      --primary-dark: #172554;
+      --secondary: #fbbf24;
+      --secondary-dark: #f59e0b;
+      --dark: #0f172a;
+      --light: #f8fafc;
+    }
+    body { background: var(--light); color: var(--dark); font-family: 'Poppins', sans-serif; }
 
     .cart-hero {
-      background: linear-gradient(135deg, #7c3aed 0%, #a855f7 55%, #ec4899 100%);
-      padding: 4rem 2rem 3rem; text-align: center;
+      background: linear-gradient(135deg, var(--dark) 0%, var(--primary-dark) 100%);
+      padding: 6rem 2rem 5rem; text-align: center;
+      position: relative; overflow: hidden;
     }
-    .cart-hero h1 { font-size: 2.5rem; font-weight: 900; color: #fff; margin: 0 0 .5rem; }
-    .cart-hero p  { color: #e9d5ff; font-size: 1rem; margin: 0; }
+    .cart-hero::before {
+      content: ''; position: absolute; inset: 0;
+      background: url('https://www.transparenttextures.com/patterns/cubes.png'); opacity: 0.1;
+    }
+    .cart-hero h1 { font-size: clamp(2.5rem, 6vw, 4rem); font-weight: 900; color: #fff; margin: 0 0 1rem; position: relative; }
+    .cart-hero p  { color: rgba(255,255,255,0.7); font-size: 1.1rem; margin: 0; position: relative; }
 
-    .cart-wrap { max-width: 900px; margin: 0 auto; padding: 2.5rem 1.5rem; }
+    .cart-wrap { max-width: 1100px; margin: 0 auto; padding: 4rem 1.5rem; }
 
-    .cart-grid { display: grid; grid-template-columns: 1fr 320px; gap: 1.5rem; align-items: start; }
+    .cart-grid { display: grid; grid-template-columns: 1fr 350px; gap: 2.5rem; align-items: start; }
 
     /* Items panel */
     .cart-panel {
@@ -152,14 +165,14 @@ $flash = flash_get();
 
     .cart-item-icon {
       width: 52px; height: 52px; border-radius: .85rem;
-      background: linear-gradient(135deg, #ede9fe, #ddd6fe);
+      background: #eff6ff; color: var(--primary);
       display: flex; align-items: center; justify-content: center;
       font-size: 1.5rem; flex-shrink: 0;
     }
     .cart-item-info { flex: 1; min-width: 0; }
-    .cart-item-name { font-size: 1rem; font-weight: 800; color: #111827; margin-bottom: .2rem; }
-    .cart-item-desc { font-size: .82rem; color: #9ca3af; }
-    .cart-item-price { font-size: .88rem; color: #7c3aed; font-weight: 700; margin-top: .2rem; }
+    .cart-item-name { font-size: 1.15rem; font-weight: 800; color: var(--dark); margin-bottom: .2rem; }
+    .cart-item-desc { font-size: .9rem; color: #64748b; }
+    .cart-item-price { font-size: .9rem; color: var(--primary); font-weight: 700; margin-top: .4rem; }
 
     .cart-qty-ctrl {
       display: flex; align-items: center; gap: .5rem; flex-shrink: 0;
@@ -171,10 +184,10 @@ $flash = flash_get();
       cursor: pointer; display: flex; align-items: center; justify-content: center;
       transition: border-color .15s, background .15s;
     }
-    .qty-btn:hover { border-color: #7c3aed; color: #7c3aed; background: #faf5ff; }
-    .qty-val { font-size: .95rem; font-weight: 800; color: #111827; min-width: 24px; text-align: center; }
+    .qty-btn:hover { border-color: var(--primary); color: var(--primary); background: #eff6ff; }
+    .qty-val { font-size: 1rem; font-weight: 800; color: var(--dark); min-width: 24px; text-align: center; }
 
-    .cart-item-subtotal { font-size: 1.05rem; font-weight: 900; color: #111827; min-width: 80px; text-align: right; flex-shrink: 0; }
+    .cart-item-subtotal { font-size: 1.2rem; font-weight: 900; color: var(--dark); min-width: 100px; text-align: right; flex-shrink: 0; }
 
     .cart-remove-btn {
       background: none; border: none; color: #d1d5db; cursor: pointer;
@@ -186,11 +199,11 @@ $flash = flash_get();
     /* Book individual btn */
     .cart-book-btn {
       display: inline-flex; align-items: center; gap: .4rem;
-      background: #7c3aed; color: #fff; font-weight: 700; font-size: .82rem;
-      padding: .45rem 1rem; border-radius: 999px; border: none; cursor: pointer;
-      transition: background .15s; text-decoration: none; margin-top: .5rem;
+      background: var(--primary); color: #fff; font-weight: 700; font-size: .85rem;
+      padding: .6rem 1.25rem; border-radius: 999px; border: none; cursor: pointer;
+      transition: all .2s; text-decoration: none; margin-top: .75rem;
     }
-    .cart-book-btn:hover { background: #6d28d9; }
+    .cart-book-btn:hover { background: var(--primary-dark); transform: translateY(-1px); }
 
     /* Empty state */
     .cart-empty {
@@ -215,20 +228,20 @@ $flash = flash_get();
       font-size: 1.15rem; font-weight: 900; color: #111827;
       border-top: 1px solid #f3f4f6; padding-top: .75rem; margin-top: .25rem;
     }
-    .summary-row.total span:last-child { color: #7c3aed; }
+    .summary-row.total span:last-child { color: var(--primary); }
 
     .checkout-btn {
-      width: 100%; padding: .95rem; border-radius: 999px;
-      background: #7c3aed; color: #fff; font-weight: 900; font-size: 1rem;
-      border: none; cursor: pointer; transition: background .2s, transform .15s;
-      margin-top: 1.25rem;
+      width: 100%; padding: 1rem; border-radius: 999px;
+      background: var(--primary); color: #fff; font-weight: 900; font-size: 1rem;
+      border: none; cursor: pointer; transition: all .2s;
+      margin-top: 1.25rem; box-shadow: 0 10px 15px -3px rgba(30,58,138,0.2);
     }
-    .checkout-btn:hover { background: #6d28d9; transform: translateY(-1px); }
+    .checkout-btn:hover { background: var(--primary-dark); transform: translateY(-1px); }
     .checkout-btn:disabled { background: #c4b5fd; cursor: not-allowed; transform: none; }
 
     .continue-link {
-      display: block; text-align: center; margin-top: .85rem;
-      font-size: .85rem; color: #7c3aed; font-weight: 700; text-decoration: none;
+      display: block; text-align: center; margin-top: 1rem;
+      font-size: .9rem; color: var(--primary); font-weight: 700; text-decoration: none;
     }
     .continue-link:hover { text-decoration: underline; }
 
@@ -264,7 +277,7 @@ $flash = flash_get();
         <div class="cart-empty-icon">🛒</div>
         <h3>Your cart is empty</h3>
         <p>Browse our ticket packages and add them to your cart.</p>
-        <a href="tickets.php" style="display:inline-flex;align-items:center;gap:.5rem;background:#7c3aed;color:#fff;font-weight:800;padding:.85rem 2rem;border-radius:999px;text-decoration:none;font-size:.95rem;">
+        <a href="tickets.php" style="display:inline-flex;align-items:center;gap:.5rem;background:var(--primary);color:#fff;font-weight:800;padding:.85rem 2rem;border-radius:999px;text-decoration:none;font-size:.95rem;">
           🎟 Browse Tickets
         </a>
       </div>

@@ -31,7 +31,12 @@ $payBadge = ['Paid'=>'badge-green','Pending'=>'badge-yellow','Cancelled'=>'badge
   <link rel="stylesheet" href="css/style.css" />
   <style>
     body { background: #f9fafb; }
-    .booking-ref { font-weight: 800; font-size: 1.05rem; color: #7c3aed; }
+    .booking-ref { font-weight: 800; font-size: 1.05rem; color: var(--primary); }
+    .status-badge { padding: .3rem .75rem; border-radius: 999px; font-size: .8rem; font-weight: 700; }
+    .status-active { background: #dcfce7; color: #166534; }
+    .status-cancelled { background: #fee2e2; color: #991b1b; }
+    .btn-view { padding: .5rem 1.25rem; background: var(--primary); color: #fff; border-radius: 999px; font-weight: 700; text-decoration: none; font-size: .85rem; }
+    .btn-view:hover { background: var(--primary-dark); }
     .booking-card { padding: 1.5rem; transition: box-shadow .2s; }
     .booking-card:hover { box-shadow: 0 6px 24px rgba(124,58,237,.1); }
   </style>

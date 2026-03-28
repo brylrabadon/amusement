@@ -107,13 +107,12 @@ if ($paySt === 'Pending' && $deadline !== '') {
   <style>
     body { background: #f1f5f9; }
     .bd-wrap { max-width: 860px; margin: 0 auto; padding: 2rem 1.5rem 4rem; }
-    .bd-back { display: inline-flex; align-items: center; gap: .4rem; color: #7c3aed; font-weight: 700; text-decoration: none; font-size: .9rem; margin-bottom: 1.5rem; }
+    .bd-back { display: inline-flex; align-items: center; gap: .4rem; color: var(--primary); font-weight: 700; text-decoration: none; font-size: .9rem; margin-bottom: 1.5rem; }
     .bd-back:hover { text-decoration: underline; }
 
     .bd-hero {
-      background: linear-gradient(135deg, #7c3aed 0%, #a855f7 55%, #ec4899 100%);
-      border-radius: 1.25rem; padding: 2rem 2.5rem; color: #fff; margin-bottom: 1.5rem;
-      display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 1rem;
+      background: linear-gradient(135deg, var(--dark) 0%, var(--primary-dark) 100%);
+      padding: 3.5rem 2rem; color: #fff; text-align: center; position: relative; overflow: hidden;
     }
     .bd-ref { font-size: 1.6rem; font-weight: 900; letter-spacing: -.02em; margin-bottom: .25rem; }
     .bd-sub { font-size: .9rem; opacity: .8; }
@@ -136,11 +135,11 @@ if ($paySt === 'Pending' && $deadline !== '') {
     }
     .bd-ticket-item:last-child { margin-bottom: 0; }
     .bd-ticket-qr { width: 64px; height: 64px; border-radius: .4rem; flex-shrink: 0; }
-    .bd-ticket-num { font-family: monospace; font-weight: 800; color: #7c3aed; font-size: .9rem; }
+    .bd-ticket-num { font-family: monospace; font-weight: 800; color: var(--primary); font-size: .9rem; }
     .bd-ticket-status { font-size: .75rem; font-weight: 700; padding: .15rem .55rem; border-radius: 999px; }
 
     .bd-rides { background: #fff; border: 1px solid #e5e7eb; border-radius: 1rem; padding: 1.5rem; margin-bottom: 1.25rem; }
-    .bd-ride-chip { display: inline-flex; align-items: center; gap: .35rem; background: #f3e8ff; color: #7c3aed; border: 1px solid #e9d5ff; border-radius: .5rem; padding: .3rem .75rem; font-size: .82rem; font-weight: 700; margin: .25rem; }
+    .bd-ride-chip { display: inline-flex; align-items: center; gap: .35rem; background: #eff6ff; color: var(--primary); border: 1px solid #dbeafe; border-radius: .5rem; padding: .3rem .75rem; font-size: .82rem; font-weight: 700; margin: .25rem; }
 
     .bd-countdown {
       background: #fef3c7; border: 1px solid #fcd34d; border-radius: .85rem;
@@ -238,7 +237,7 @@ if ($paySt === 'Pending' && $deadline !== '') {
       <div class="bd-row"><span class="bd-lbl">Type</span><span class="bd-val"><?= e($booking['ticket_type_name'] ?? '') ?></span></div>
       <div class="bd-row"><span class="bd-lbl">Quantity</span><span class="bd-val"><?= (int)($booking['quantity'] ?? 1) ?></span></div>
       <div class="bd-row"><span class="bd-lbl">Unit Price</span><span class="bd-val">₱<?= number_format((float)($booking['unit_price'] ?? 0), 2) ?></span></div>
-      <div class="bd-row"><span class="bd-lbl">Total</span><span class="bd-val" style="color:#7c3aed;font-size:1.05rem;">₱<?= number_format((float)($booking['total_amount'] ?? 0), 2) ?></span></div>
+      <div class="bd-row"><span class="bd-lbl">Total</span><span class="bd-val" style="color:var(--primary);font-size:1.05rem;">₱<?= number_format((float)($booking['total_amount'] ?? 0), 2) ?></span></div>
       <div class="bd-row"><span class="bd-lbl">Visit Date</span><span class="bd-val"><?= e((string)($booking['visit_date'] ?? '')) ?></span></div>
     </div>
 

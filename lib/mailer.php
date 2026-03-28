@@ -73,30 +73,30 @@ function send_cancellation_email(array $booking, array $tickets, PDO $pdo): bool
 <div style="max-width:600px;margin:2rem auto;background:#fff;border-radius:1.25rem;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,.1);">
 
   <!-- Header -->
-  <div style="background:linear-gradient(135deg,#7c3aed 0%,#a855f7 60%,#ec4899 100%);padding:2.5rem 2rem;text-align:center;">
+  <div style="background:linear-gradient(135deg,#0f172a 0%,#1e3a8a 100%);padding:2.5rem 2rem;text-align:center;">
     <div style="font-size:2.5rem;margin-bottom:.5rem;">⏰</div>
     <h1 style="margin:0;color:#fff;font-size:1.6rem;font-weight:900;letter-spacing:-.02em;">Booking Expired</h1>
-    <p style="margin:.5rem 0 0;color:#e9d5ff;font-size:.95rem;">Your reservation was not completed in time</p>
+    <p style="margin:.5rem 0 0;color:rgba(255,255,255,0.7);font-size:.95rem;">Your reservation was not completed in time</p>
   </div>
 
   <!-- Body -->
   <div style="padding:2rem;">
     <p style="font-size:1rem;margin:0 0 1.25rem;">Dear <strong>' . $e($name) . '</strong>,</p>
     <p style="color:#374151;margin:0 0 1.5rem;line-height:1.6;">
-      Your booking <strong style="color:#7c3aed;">' . $e($ref) . '</strong> has been
+      Your booking <strong style="color:#1e3a8a;">' . $e($ref) . '</strong> has been
       <strong style="color:#dc2626;">automatically cancelled</strong> because payment was not completed
       within the 3-minute reservation window.
     </p>
 
     <!-- Booking Details -->
-    <div style="background:#faf5ff;border:1px solid #e9d5ff;border-radius:.85rem;overflow:hidden;margin-bottom:1.5rem;">
-      <div style="background:#7c3aed;padding:.75rem 1rem;">
+    <div style="background:#eff6ff;border:1px solid #dbeafe;border-radius:.85rem;overflow:hidden;margin-bottom:1.5rem;">
+      <div style="background:#1e3a8a;padding:.75rem 1rem;">
         <span style="color:#fff;font-weight:800;font-size:.9rem;">📋 Booking Details</span>
       </div>
       <table style="width:100%;border-collapse:collapse;font-size:.9rem;">
         <tr>
           <td style="padding:.65rem 1rem;font-weight:700;color:#374151;border-bottom:1px solid #e5e7eb;width:45%;">Reference No.</td>
-          <td style="padding:.65rem 1rem;font-family:monospace;font-weight:700;color:#7c3aed;border-bottom:1px solid #e5e7eb;">' . $e($ref) . '</td>
+          <td style="padding:.65rem 1rem;font-family:monospace;font-weight:700;color:#1e3a8a;border-bottom:1px solid #e5e7eb;">' . $e($ref) . '</td>
         </tr>
         <tr style="background:#f8fafc;">
           <td style="padding:.65rem 1rem;font-weight:700;color:#374151;border-bottom:1px solid #e5e7eb;">Customer Name</td>
@@ -120,11 +120,11 @@ function send_cancellation_email(array $booking, array $tickets, PDO $pdo): bool
         </tr>
         <tr>
           <td style="padding:.65rem 1rem;font-weight:700;color:#374151;border-bottom:1px solid #e5e7eb;">Visit Date</td>
-          <td style="padding:.65rem 1rem;border-bottom:1px solid #e5e7eb;">' . $e($date) . '</td>
+          <td style="padding:.65rem 1rem;border-bottom:1px solid #e5e7eb;">' . $date . '</td>
         </tr>
         <tr style="background:#f8fafc;">
           <td style="padding:.65rem 1rem;font-weight:700;color:#374151;border-bottom:1px solid #e5e7eb;">Total Amount</td>
-          <td style="padding:.65rem 1rem;font-weight:800;color:#7c3aed;border-bottom:1px solid #e5e7eb;">&#8369;' . $e($amount) . '</td>
+          <td style="padding:.65rem 1rem;font-weight:800;color:#1e3a8a;border-bottom:1px solid #e5e7eb;">&#8369;' . $e($amount) . '</td>
         </tr>
         <tr>
           <td style="padding:.65rem 1rem;font-weight:700;color:#374151;border-bottom:1px solid #e5e7eb;">Booked At</td>
@@ -144,7 +144,7 @@ function send_cancellation_email(array $booking, array $tickets, PDO $pdo): bool
         Want to book again? Your visit date may still be available.
       </p>
       <a href="' . $continueUrl . '"
-         style="display:inline-block;background:#16a34a;color:#fff;padding:.75rem 2rem;border-radius:999px;font-weight:800;text-decoration:none;font-size:.95rem;margin-right:.5rem;">
+         style="display:inline-block;background:#fbbf24;color:#000000;padding:.75rem 2rem;border-radius:999px;font-weight:900;text-decoration:none;font-size:.95rem;margin-right:.5rem;box-shadow:0 8px 15px rgba(251,191,36,0.2);">
         🎟 Continue Booking
       </a>
     </div>
@@ -160,7 +160,7 @@ function send_cancellation_email(array $booking, array $tickets, PDO $pdo): bool
     </div>
 
     <p style="margin-top:2rem;color:#9ca3af;font-size:.82rem;text-align:center;">
-      Questions? Contact us at <a href="mailto:support@amusepark.com" style="color:#7c3aed;">support@amusepark.com</a>
+      Questions? Contact us at <a href="mailto:support@amusepark.com" style="color:#1e3a8a;">support@amusepark.com</a>
     </p>
   </div>
 

@@ -81,7 +81,6 @@ function render_nav($user, string $active = ''): void {
       <li><a href="<?= $root ?>logout.php" style="color:#dc2626;font-weight:700;">Logout</a></li>
     <?php else: ?>
       <li><a href="<?= $root ?>login.php"    <?= $active==='login'    ?'class="active"':'' ?>>Login</a></li>
-      <li><a href="<?= $root ?>register.php" <?= $active==='register' ?'class="active"':'' ?>>Register</a></li>
     <?php endif; ?>
     <li><a href="<?= $root ?>tickets.php" class="nav-cta <?= $active==='tickets'?'active':'' ?>">🎟 Buy Tickets</a></li>
     <li>
@@ -93,12 +92,12 @@ function render_nav($user, string $active = ''): void {
         <span id="cart-nav-badge" style="
           display:<?= $cartCount > 0 ? 'inline-flex' : 'none' ?>;
           align-items:center;justify-content:center;
-          background:#7c3aed;color:#fff;
+          background:var(--primary);color:#fff;
           font-size:.65rem;font-weight:800;
           width:18px;height:18px;border-radius:50%;
           position:absolute;top:-6px;right:-8px;
           line-height:1;
-        "><?= $cartCount ?></span>
+        "><?= (int)$cartCount ?></span>
       </a>
     </li>
   </ul>
@@ -131,7 +130,7 @@ function render_footer(): void {
     ?>
 <footer class="site-footer">
   <div class="footer-logo">
-    <img src="<?= $root ?>hero.png.jpg" alt="AmusePark" style="height:44px;width:44px;border-radius:50%;object-fit:cover;margin-right:.5rem;vertical-align:middle;">
+    <img src="<?= $root ?>hero.png.jpg" alt="AmusePark" style="height:48px;width:48px;border-radius:12px;object-fit:cover;margin-right:.75rem;vertical-align:middle;">
     Amuse<span>Park</span>
   </div>
   <p>© 2026 AmusePark Philippines. All rights reserved.</p>
