@@ -73,13 +73,39 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $action === 'checkout_page') {
         flash_set('error', 'Please log in to continue.');
         redirect('login.php?next=' . urlencode('cart.php'));
     }
-    $tid = (int)($_POST['ticket_type_id'] ?? 0);
-    $qty = max(1, (int)($_POST['qty'] ?? 1));
-    if ($tid > 0) {
-        $_SESSION['booking_flow'] = ['ticket_type_id' => $tid, 'quantity' => $qty];
-        redirect('tickets.php?step=1');
+
+    // Build queue from all cart items
+    $cartQueue = [];
+    if (!empty($_SESSION['cart'])) {
+        $ids = array_map('intval', array_keys($_SESSION['cart']));
+        $in  = implode(',', $ids);
+        try {
+            $rows = $pdo->query("SELECT * FROM ticket_types WHERE id IN ($in) AND is_active = 1")->fetchAll();
+            foreach ($rows as $r) {
+                $tid = (int)$r['id'];
+                $qty = (int)($_SESSION['cart'][$tid] ?? 0);
+                if ($qty > 0) {
+                    $cartQueue[] = ['ticket_type_id' => $tid, 'quantity' => $qty];
+                }
+            }
+        } catch (\Throwable $e) {}
     }
-    redirect('cart.php');
+
+    if (empty($cartQueue)) {
+        flash_set('error', 'Your cart is empty.');
+        redirect('cart.php');
+    }
+
+    // Set first item as active booking, rest as queue
+    $first = array_shift($cartQueue);
+    $_SESSION['booking_flow'] = [
+        'ticket_type_id' => $first['ticket_type_id'],
+        'quantity'       => $first['quantity'],
+        'cart_queue'     => $cartQueue,  // remaining items to book after this one
+        'cart_total'     => count($cartQueue) + 1,
+        'cart_index'     => 1,
+    ];
+    redirect('tickets.php?step=1');
 }
 
 // ── POST: clear cart ─────────────────────────────────────────────────────────
@@ -321,7 +347,7 @@ $flash = flash_get();
                 <input type="hidden" name="action" value="checkout_page"/>
                 <input type="hidden" name="ticket_type_id" value="<?= $tid ?>"/>
                 <input type="hidden" name="qty" value="<?= $qty ?>" class="hidden-qty-<?= $tid ?>"/>
-                <button type="submit" class="cart-book-btn">🎟 Book This Now</button>
+                <button type="submit" class="cart-book-btn" style="background:#64748b;">📋 Book This Only</button>
               </form>
             </div>
 
@@ -360,9 +386,18 @@ $flash = flash_get();
             Log In to Checkout
           </a>
         <?php else: ?>
-          <p style="font-size:.82rem;color:#9ca3af;margin:.75rem 0 0;text-align:center;">
-            Each ticket is booked separately. Click "Book This Now" on any item to start the booking flow.
-          </p>
+          <?php
+            $firstItem = !empty($cartItems) ? $cartItems[0] : null;
+            $totalQty  = array_sum(array_column($cartItems, 'qty'));
+          ?>
+          <?php if ($firstItem): ?>
+            <a href="cart-checkout.php" class="checkout-btn" style="display:block;text-align:center;text-decoration:none;margin-top:1.25rem;">
+              🎟 Book All (<?= $totalQty ?> ticket<?= $totalQty !== 1 ? 's' : '' ?> · <?= count($cartItems) ?> type<?= count($cartItems) !== 1 ? 's' : '' ?>)
+            </a>
+            <p style="font-size:.78rem;color:#94a3b8;margin:.5rem 0 0;text-align:center;">
+              Fill in details once — all tickets booked together
+            </p>
+          <?php endif; ?>
         <?php endif; ?>
 
         <a href="tickets.php" class="continue-link">+ Add more tickets</a>

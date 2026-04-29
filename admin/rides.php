@@ -146,7 +146,11 @@ $formAction = $rideToEdit ? 'update' : 'create';
 <head>
   <meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Manage Rides - AmusePark</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="../css/style.css" />
+  <style> body { font-family: 'Poppins', sans-serif; } </style>
 </head>
 <body>
 <?php render_nav($user, 'rides'); ?>
@@ -221,7 +225,7 @@ $formAction = $rideToEdit ? 'update' : 'create';
           </p>
           <div style="display:flex; gap:0.5rem;">
             <a class="btn btn-outline btn-sm" href="rides.php?edit=<?= (int)$r['id'] ?>">Edit</a>
-            <form method="post" style="display:inline;">
+            <form method="post" style="display:inline;" onsubmit="return confirm('Delete this ride? This cannot be undone.');">
               <input type="hidden" name="action" value="delete" />
               <input type="hidden" name="id" value="<?= (int)$r['id'] ?>" />
               <button class="btn btn-danger btn-sm" type="submit">Delete</button>

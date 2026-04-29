@@ -44,6 +44,11 @@ function expire_pending_bookings(PDO $pdo): int
             try {
                 send_cancellation_email($booking, $tickets, $pdo);
             } catch (Throwable $e) {}
+        } elseif (file_exists(__DIR__ . '/../lib/mailer.php')) {
+            require_once __DIR__ . '/../lib/mailer.php';
+            try {
+                send_cancellation_email($booking, $tickets, $pdo);
+            } catch (Throwable $e) {}
         }
 
         $count++;

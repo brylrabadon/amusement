@@ -124,8 +124,12 @@ if (!$typeToEdit && $preset !== '') $curPreset = $preset;
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Ticket Types - AmusePark Admin</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="../css/style.css" />
   <style>
+    body { font-family: 'Poppins', sans-serif; }
     .badge-status { font-size:.75rem; padding:.2rem .55rem; border-radius:1rem; font-weight:700; text-transform:uppercase; }
     .status-active   { background:#dcfce7; color:#166534; }
     .status-inactive { background:#fee2e2; color:#991b1b; }
@@ -216,7 +220,7 @@ if (!$typeToEdit && $preset !== '') $curPreset = $preset;
             <button class="btn btn-outline btn-sm btn-full" type="submit"><?= $t['is_active']?'Deactivate':'Activate' ?></button>
           </form>
           <a class="btn btn-outline btn-sm" href="ticket-types.php?edit=<?= (int)$t['id'] ?>" style="flex:1;text-align:center;">Edit</a>
-          <form method="post" onsubmit="return confirm('Delete this ticket type?');">
+          <form method="post" onsubmit="return confirm('Delete this ticket type? This cannot be undone.');">
             <input type="hidden" name="action" value="delete" />
             <input type="hidden" name="id" value="<?= (int)$t['id'] ?>" />
             <button class="btn btn-danger btn-sm" type="submit">🗑</button>

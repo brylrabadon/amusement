@@ -1,34 +1,49 @@
 <?php
 declare(strict_types=1);
-
 require_once __DIR__ . '/../lib/auth.php';
 require_once __DIR__ . '/../lib/layout.php';
 
 $user = require_staff();
 $pdo  = db();
 
-/**
- * Process a ticket scan — marks ACTIVE ticket as USED and returns full booking details.
- */
 function process_scan(string $ticket_number, PDO $pdo): array
 {
     $ticket_number = trim($ticket_number);
-    if ($ticket_number === '') {
-        return ['success' => false, 'error' => 'Please enter a ticket number.'];
+    if ($ticket_number === '') return ['success' => false, 'error' => 'Please enter a ticket number.'];
+
+    // Handle old qr_code_data format: "AMUSEPARK|AP-XXXXX-XXXXXX|..."
+    // Extract booking reference and look up the ticket number from it
+    if (str_starts_with($ticket_number, 'AMUSEPARK|')) {
+        $parts = explode('|', $ticket_number);
+        $bookingRef = $parts[1] ?? '';
+        if ($bookingRef !== '') {
+            try {
+                $refSt = $pdo->prepare(
+                    'SELECT t.ticket_number FROM tickets t
+                     JOIN bookings b ON b.id = t.booking_id
+                     WHERE b.booking_reference = ?
+                     ORDER BY t.ticket_number ASC LIMIT 1'
+                );
+                $refSt->execute([$bookingRef]);
+                $found = $refSt->fetchColumn();
+                if ($found) {
+                    $ticket_number = (string)$found;
+                }
+            } catch (\Throwable $e) {}
+        }
     }
 
     try {
         $stmt = $pdo->prepare(
             'SELECT t.id, t.ticket_number, t.status, t.booking_id, t.scanned_at,
-                    b.booking_reference, b.visit_date, b.ticket_type_id,
+                    b.booking_reference, b.visit_date,
                     b.customer_name, b.customer_email, b.payment_status,
-                    b.total_amount, b.quantity, b.created_at AS booked_at,
+                    b.total_amount, b.quantity,
                     tt.name AS ticket_type_name
              FROM tickets t
-             JOIN bookings b  ON b.id  = t.booking_id
+             JOIN bookings b ON b.id = t.booking_id
              JOIN ticket_types tt ON tt.id = b.ticket_type_id
-             WHERE t.ticket_number = ?
-             LIMIT 1'
+             WHERE t.ticket_number = ? LIMIT 1'
         );
         $stmt->execute([$ticket_number]);
         $ticket = $stmt->fetch();
@@ -36,466 +51,336 @@ function process_scan(string $ticket_number, PDO $pdo): array
         return ['success' => false, 'error' => 'Database error: ' . $e->getMessage()];
     }
 
-    if (!$ticket) {
-        return ['success' => false, 'error' => 'Ticket not found.'];
-    }
+    if (!$ticket) return ['success' => false, 'error' => 'Ticket not found.'];
 
     $status = (string)($ticket['status'] ?? '');
 
-    // Fetch rides for this ticket type
+    // Fetch selected rides
     $rides = [];
     try {
-        $rideStmt = $pdo->prepare(
-            'SELECT r.name FROM ticket_ride tr
-             JOIN rides r ON r.id = tr.ride_id
-             WHERE tr.ticket_type_id = ?
-             ORDER BY r.name'
+        $rs = $pdo->prepare(
+            'SELECT r.name FROM booking_rides br
+             JOIN rides r ON r.id = br.ride_id
+             WHERE br.booking_id = ? ORDER BY r.name'
         );
-        $rideStmt->execute([(int)$ticket['ticket_type_id']]);
-        foreach ($rideStmt->fetchAll() as $row) {
-            $rides[] = (string)$row['name'];
-        }
-    } catch (\Throwable $e) {
-        // rides not critical
-    }
+        $rs->execute([(int)$ticket['booking_id']]);
+        foreach ($rs->fetchAll() as $row) $rides[] = (string)$row['name'];
+    } catch (\Throwable $e) {}
 
     $details = [
-        'ticket_number'     => (string)$ticket['ticket_number'],
-        'booking_reference' => (string)$ticket['booking_reference'],
-        'customer_name'     => (string)$ticket['customer_name'],
-        'customer_email'    => (string)$ticket['customer_email'],
-        'payment_status'    => (string)$ticket['payment_status'],
-        'booked_at'         => (string)$ticket['booked_at'],
-        'visit_date'        => (string)$ticket['visit_date'],
-        'ticket_type_name'  => (string)$ticket['ticket_type_name'],
-        'quantity'          => (string)$ticket['quantity'],
-        'total_amount'      => (string)$ticket['total_amount'],
-        'rides'             => $rides,
-        'status'            => $status,
+        'ticket_number'   => (string)($ticket['ticket_number'] ?? ''),
+        'status'          => $status,
+        'booking_ref'     => (string)($ticket['booking_reference'] ?? ''),
+        'customer_name'   => (string)($ticket['customer_name'] ?? ''),
+        'customer_email'  => (string)($ticket['customer_email'] ?? ''),
+        'ticket_type'     => (string)($ticket['ticket_type_name'] ?? ''),
+        'quantity'        => (int)($ticket['quantity'] ?? 1),
+        'visit_date'      => (string)($ticket['visit_date'] ?? ''),
+        'total_amount'    => (float)($ticket['total_amount'] ?? 0),
+        'payment_status'  => (string)($ticket['payment_status'] ?? ''),
+        'scanned_at'      => (string)($ticket['scanned_at'] ?? ''),
+        'rides'           => $rides,
     ];
 
     switch ($status) {
         case 'ACTIVE':
+            if (($ticket['payment_status'] ?? '') !== 'Paid') {
+                return ['success' => false, 'error' => 'Payment not completed for this booking.', 'details' => $details];
+            }
             try {
-                $upd = $pdo->prepare("UPDATE tickets SET status = 'USED', scanned_at = NOW() WHERE id = ?");
-                $upd->execute([(int)$ticket['id']]);
+                $pdo->prepare("UPDATE tickets SET status='USED', scanned_at=NOW() WHERE id=?")->execute([(int)$ticket['id']]);
                 $details['status'] = 'USED';
                 return ['success' => true, 'details' => $details];
             } catch (\Throwable $e) {
                 return ['success' => false, 'error' => 'Database error: ' . $e->getMessage()];
             }
-
         case 'USED':
-            return ['success' => false, 'error' => 'Ticket Already Used', 'status' => 'USED', 'details' => $details];
-
+            return ['success' => false, 'error' => 'Ticket already used.', 'status' => 'USED', 'details' => $details];
         case 'CANCELLED':
             return ['success' => false, 'error' => 'Ticket is cancelled.', 'status' => 'CANCELLED', 'details' => $details];
-
         case 'EXPIRED':
             return ['success' => false, 'error' => 'Ticket has expired.', 'status' => 'EXPIRED', 'details' => $details];
-
         default:
             return ['success' => false, 'error' => 'Unknown ticket status: ' . $status];
     }
 }
 
-// Handle AJAX scan request
+// AJAX endpoint
 if (isset($_GET['ajax']) && isset($_GET['ticket'])) {
     header('Content-Type: application/json');
     echo json_encode(process_scan((string)$_GET['ticket'], $pdo));
     exit;
 }
 
-// Handle regular GET scan
 $result      = null;
 $ticketInput = '';
-if (isset($_GET['ticket'])) {
+if (isset($_GET['ticket']) && !isset($_GET['ajax'])) {
     $ticketInput = (string)$_GET['ticket'];
     $result      = process_scan($ticketInput, $pdo);
 }
-$ticketInputE = e($ticketInput);
 ?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Staff Scanner - AmusePark</title>
-  <link rel="stylesheet" href="../css/style.css" />
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Ticket Scanner — AmusePark Staff</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../css/style.css"/>
   <style>
-    body { background: #f8fafc; color: #1e293b; }
+    *,*::before,*::after{box-sizing:border-box}
+    body{font-family:'Poppins',sans-serif;background:#f1f5f9;color:#0f172a;min-height:100vh;margin:0}
 
-    .page-header {
-      background-image: linear-gradient(rgba(0,0,0,0.35), rgba(0,0,0,0.35)),
-                        url('https://images.unsplash.com/photo-1513889961551-628c1e5e2ee9?q=80&w=2070');
-      background-size: cover; background-position: center;
-      padding: 5rem 2rem; color: white;
-      border-radius: 0 0 2.5rem 2.5rem; margin-bottom: -4rem; text-align: left;
-    }
-    .page-header h1 { font-size: 2.5rem; font-weight: 800; margin: 0; text-shadow: 2px 2px 8px rgba(0,0,0,.5); }
-    .page-header p  { font-size: 1.1rem; margin-top: .75rem; font-weight: 500; text-shadow: 1px 1px 4px rgba(0,0,0,.5); }
+    .scanner-hero{background:linear-gradient(135deg,#0f172a 0%,#1e3a8a 60%,#0f172a 100%);padding:3rem 2rem 4rem;text-align:center;position:relative;overflow:hidden}
+    .scanner-hero::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse at 50% 0%,rgba(99,102,241,.2) 0%,transparent 70%)}
+    .scanner-hero h1{position:relative;z-index:1;font-size:2.25rem;font-weight:900;color:#fff;margin:0 0 .4rem;letter-spacing:-.02em}
+    .scanner-hero p{position:relative;z-index:1;color:rgba(255,255,255,.6);font-size:.95rem;margin:0}
+    .hero-badge{position:relative;z-index:1;display:inline-flex;align-items:center;gap:.4rem;background:rgba(99,102,241,.2);border:1px solid rgba(99,102,241,.4);color:#a5b4fc;border-radius:999px;padding:.35rem 1.1rem;font-size:.78rem;font-weight:700;margin-bottom:1rem;text-transform:uppercase;letter-spacing:.05em}
 
-    .scanner-card {
-      background: #fff; border-radius: 1.25rem; padding: 2.5rem;
-      box-shadow: 0 10px 25px -5px rgba(0,0,0,.07); border: 1px solid #e2e8f0; margin-bottom: 2rem;
-    }
+    .scanner-wrap{max-width:680px;margin:0 auto;padding:2rem 1.5rem 4rem}
+
+    .s-card{background:#fff;border:1px solid #e2e8f0;border-radius:1.5rem;padding:2rem;margin-bottom:1.5rem;box-shadow:0 4px 12px rgba(0,0,0,.06)}
+    .s-card h3{font-size:.8rem;font-weight:800;color:#94a3b8;text-transform:uppercase;letter-spacing:.07em;margin:0 0 1.25rem;display:flex;align-items:center;gap:.5rem}
 
     /* Camera */
-    .camera-section { margin-bottom: 2rem; }
-    .camera-section h3 { font-weight: 700; margin-bottom: 1rem; color: #374151; }
-    #qr-reader { width: 100%; max-width: 480px; border-radius: 1rem; overflow: hidden; border: 2px solid #e2e8f0; }
-    #camera-status { font-size: .9rem; color: #6b7280; margin-top: .5rem; }
-    .btn-camera { padding: .65rem 1.5rem; background: #7c3aed; color: #fff; border: none; border-radius: .75rem; font-weight: 700; cursor: pointer; transition: background .2s; }
-    .btn-camera:hover { background: #6d28d9; }
-    .btn-camera-stop { background: #dc2626; }
-    .btn-camera-stop:hover { background: #b91c1c; }
+    #qr-reader{width:100%;border-radius:1rem;overflow:hidden;border:3px solid #1e3a8a;background:#0f172a;min-height:300px}
+    #qr-reader video{border-radius:.85rem;}
+    .cam-btns{display:flex;gap:.75rem;margin-top:1rem}
+    .btn-cam{flex:1;padding:.85rem;border-radius:.75rem;font-weight:800;font-size:.95rem;cursor:pointer;border:none;font-family:inherit;transition:all .2s}
+    .btn-start{background:#1e3a8a;color:#fff}.btn-start:hover{background:#172554}
+    .btn-stop{background:#dc2626;color:#fff;display:none}.btn-stop:hover{background:#b91c1c}
+    #camera-status{font-size:.85rem;color:#64748b;margin-top:.75rem;text-align:center;font-weight:600;min-height:1.5rem}
 
-    /* Manual form */
-    .divider { display: flex; align-items: center; gap: 1rem; margin: 1.5rem 0; color: #94a3b8; font-size: .85rem; font-weight: 600; }
-    .divider::before, .divider::after { content: ''; flex: 1; height: 1px; background: #e2e8f0; }
-    .scanner-form { display: flex; gap: 1rem; flex-wrap: wrap; align-items: flex-end; }
-    .scanner-form label { display: block; font-weight: 700; margin-bottom: .5rem; color: #374151; }
-    .scanner-form input[type="text"] {
-      flex: 1; min-width: 220px; padding: .75rem 1rem;
-      border: 2px solid #e2e8f0; border-radius: .75rem; font-size: 1rem; font-family: monospace;
-    }
-    .scanner-form input[type="text"]:focus { outline: none; border-color: #7c3aed; }
-    .btn-scan { padding: .75rem 1.75rem; background: #1d4ed8; color: #fff; border: none; border-radius: .75rem; font-weight: 700; font-size: 1rem; cursor: pointer; transition: background .2s; }
-    .btn-scan:hover { background: #1e40af; }
+    /* Manual input */
+    .divider{display:flex;align-items:center;gap:1rem;margin:1.5rem 0;color:#94a3b8;font-size:.82rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em}
+    .divider::before,.divider::after{content:'';flex:1;height:1px;background:#e2e8f0}
 
-    /* Result cards */
-    .result-card { border-radius: 1.25rem; padding: 2rem; margin-top: 1.5rem; }
-    .result-success { background: #f0fdf4; border: 2px solid #86efac; color: #14532d; }
-    .result-warning { background: #fffbeb; border: 2px solid #fcd34d; color: #78350f; }
-    .result-error   { background: #fef2f2; border: 2px solid #fca5a5; color: #7f1d1d; }
-    .result-heading { font-size: 1.4rem; font-weight: 800; margin: 0 0 1.25rem; display: flex; align-items: center; gap: .5rem; }
-    .result-row { display: flex; gap: .5rem; margin-bottom: .6rem; font-size: .95rem; }
-    .result-label { font-weight: 700; min-width: 170px; flex-shrink: 0; }
-    .result-value { font-family: monospace; }
-    .rides-list { list-style: none; padding: 0; margin: .25rem 0 0; }
-    .rides-list li::before { content: "🎢 "; }
-    .rides-list li { margin-bottom: .25rem; }
-    .btn-details { margin-top: 1rem; padding: .6rem 1.25rem; background: #7c3aed; color: #fff; border: none; border-radius: .75rem; font-weight: 700; cursor: pointer; font-size: .9rem; }
-    .btn-details:hover { background: #6d28d9; }
+    .scan-form{display:flex;gap:.75rem}
+    .scan-input{flex:1;background:#f8fafc;border:1.5px solid #e2e8f0;color:#0f172a;border-radius:.85rem;padding:.85rem 1.25rem;font-size:1rem;font-family:inherit;transition:border-color .2s}
+    .scan-input:focus{border-color:#1e3a8a;outline:none;box-shadow:0 0 0 3px rgba(30,58,138,.1)}
+    .scan-input::placeholder{color:#94a3b8}
+    .btn-scan{background:#1e3a8a;color:#fff;border:none;border-radius:.85rem;padding:.85rem 1.75rem;font-weight:800;font-size:.95rem;cursor:pointer;font-family:inherit;transition:all .2s;white-space:nowrap}
+    .btn-scan:hover{background:#172554;transform:translateY(-1px)}
 
-    /* Popup / Modal */
-    .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.55); z-index: 300; align-items: center; justify-content: center; }
-    .modal-overlay.show { display: flex; }
-    .modal { background: #fff; border-radius: 1.25rem; padding: 2rem; width: 90%; max-width: 540px; max-height: 90vh; overflow-y: auto; box-shadow: 0 20px 60px rgba(0,0,0,.2); }
-    .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; }
-    .modal-header h2 { font-size: 1.25rem; font-weight: 800; margin: 0; }
-    .modal-close { background: none; border: none; font-size: 1.5rem; cursor: pointer; color: #94a3b8; line-height: 1; }
-    .modal-close:hover { color: #374151; }
-    .detail-table { width: 100%; border-collapse: collapse; font-size: .9rem; }
-    .detail-table tr:nth-child(even) td { background: #f8fafc; }
-    .detail-table td { padding: .65rem .85rem; border-bottom: 1px solid #f1f5f9; }
-    .detail-table td:first-child { font-weight: 700; color: #374151; width: 45%; }
-    .detail-table td:last-child { font-family: monospace; }
-    .status-badge { display: inline-block; padding: .2rem .75rem; border-radius: 999px; font-size: .8rem; font-weight: 700; }
-    .status-active    { background: #dcfce7; color: #16a34a; }
-    .status-used      { background: #dbeafe; color: #1d4ed8; }
-    .status-cancelled { background: #fee2e2; color: #dc2626; }
-    .status-expired   { background: #fef9c3; color: #ca8a04; }
-    .status-paid      { background: #dcfce7; color: #16a34a; }
-    .status-pending   { background: #fef9c3; color: #ca8a04; }
+    /* Result */
+    .result-card{border-radius:1.5rem;padding:1.75rem;margin-bottom:1.5rem;border:1px solid}
+    .result-success{background:#f0fdf4;border-color:#86efac}
+    .result-error{background:#fef2f2;border-color:#fca5a5}
+    .result-warn{background:#fffbeb;border-color:#fde68a}
+
+    .result-header{display:flex;align-items:center;gap:1rem;margin-bottom:1.25rem}
+    .result-icon{width:52px;height:52px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:1.5rem;flex-shrink:0}
+    .icon-success{background:#dcfce7}.icon-error{background:#fee2e2}.icon-warn{background:#fef9c3}
+    .result-title{font-size:1.15rem;font-weight:800;margin:0 0 .2rem}
+    .result-title.success{color:#16a34a}.result-title.error{color:#dc2626}.result-title.warn{color:#d97706}
+    .result-msg{font-size:.88rem;color:#64748b;margin:0}
+
+    .detail-grid{display:grid;grid-template-columns:1fr 1fr;gap:.6rem 1.5rem;font-size:.88rem;margin-top:1rem}
+    .detail-label{color:#94a3b8;font-weight:600;font-size:.78rem;text-transform:uppercase;letter-spacing:.04em;margin-bottom:.15rem}
+    .detail-value{color:#0f172a;font-weight:700}
+    .detail-value.mono{font-family:monospace;color:#1e3a8a}
+
+    .rides-list{display:flex;flex-wrap:wrap;gap:.4rem;margin-top:.5rem}
+    .ride-chip{background:#eff6ff;border:1px solid #dbeafe;color:#1e3a8a;border-radius:999px;padding:.2rem .75rem;font-size:.78rem;font-weight:700}
+
+    .scan-again-btn{display:block;width:100%;padding:.9rem;border-radius:.85rem;background:#f1f5f9;border:1px solid #e2e8f0;color:#475569;font-weight:700;font-size:.9rem;cursor:pointer;font-family:inherit;transition:all .2s;text-align:center;text-decoration:none;margin-top:1rem}
+    .scan-again-btn:hover{background:#e2e8f0;color:#0f172a}
+
+    /* Live indicator */
+    .live-dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:#4ade80;animation:pulse 1.5s infinite}
+    @keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.5;transform:scale(1.3)}}
   </style>
 </head>
 <body>
-
 <?php render_nav($user, 'scanner'); ?>
 
-<div class="page-header">
-  <div class="container">
-    <h1>🔍 Ticket Scanner</h1>
-    <p>Scan QR codes or enter ticket numbers to validate park entry.</p>
-  </div>
+<div class="scanner-hero">
+  <div class="hero-badge"><span class="live-dot"></span> Live Scanner</div>
+  <h1>🔍 Ticket Scanner</h1>
+  <p>Scan QR codes or enter ticket numbers to validate entry</p>
 </div>
 
-<div class="container" style="position:relative;z-index:10;">
+<div class="scanner-wrap">
 
-  <div class="scanner-card">
-
-    <!-- Camera QR Scanner -->
-    <div class="camera-section">
-      <h3>📷 Camera QR Scan</h3>
-      <div id="qr-reader"></div>
-      <p id="camera-status">Camera is off. Click Start to begin scanning.</p>
-      <div style="display:flex;gap:.75rem;margin-top:.75rem;flex-wrap:wrap;">
-        <button class="btn-camera" id="btn-start-cam">▶ Start Camera</button>
-        <button class="btn-camera btn-camera-stop" id="btn-stop-cam" style="display:none;">⏹ Stop Camera</button>
+  <?php if ($result !== null): ?>
+    <?php
+      $isSuccess = (bool)($result['success'] ?? false);
+      $errStatus = (string)($result['status'] ?? '');
+      $isWarn    = !$isSuccess && in_array($errStatus, ['USED','CANCELLED','EXPIRED'], true);
+      $cardClass = $isSuccess ? 'result-success' : ($isWarn ? 'result-warn' : 'result-error');
+      $iconClass = $isSuccess ? 'icon-success' : ($isWarn ? 'icon-warn' : 'icon-error');
+      $titleClass= $isSuccess ? 'success' : ($isWarn ? 'warn' : 'error');
+      $icon      = $isSuccess ? '✅' : ($isWarn ? '⚠️' : '❌');
+      $title     = $isSuccess ? 'Entry Granted!' : ($isWarn ? 'Cannot Admit' : 'Scan Failed');
+      $msg       = (string)($result['error'] ?? ($isSuccess ? 'Ticket validated successfully.' : ''));
+      $d         = $result['details'] ?? [];
+    ?>
+    <div class="result-card <?= $cardClass ?>">
+      <div class="result-header">
+        <div class="result-icon <?= $iconClass ?>"><?= $icon ?></div>
+        <div>
+          <div class="result-title <?= $titleClass ?>"><?= $title ?></div>
+          <div class="result-msg"><?= e($msg) ?></div>
+        </div>
       </div>
-    </div>
 
-    <div class="divider">OR ENTER MANUALLY</div>
-
-    <!-- Manual Input -->
-    <form class="scanner-form" method="get" action="scanner.php">
-      <div style="flex:1;min-width:220px;">
-        <label for="ticket-input">Ticket Number</label>
-        <input
-          type="text"
-          id="ticket-input"
-          name="ticket"
-          value="<?= $ticketInputE ?>"
-          placeholder="e.g. TK-AP-XXXXXX-001"
-          autocomplete="off"
-        />
-      </div>
-      <button class="btn-scan" type="submit">🔎 Verify</button>
-    </form>
-
-    <?php if ($result !== null): ?>
-      <?php
-        $details = $result['details'] ?? [];
-        $statusVal = $result['status'] ?? ($result['success'] ? 'USED' : '');
-      ?>
-
-      <?php if ($result['success']): ?>
-        <div class="result-card result-success">
-          <div class="result-heading">✅ Entry Granted — Ticket Marked as USED</div>
-          <div class="result-row">
-            <span class="result-label">Customer Name</span>
-            <span><?= e($details['customer_name'] ?? '') ?></span>
+      <?php if (!empty($d)): ?>
+        <div class="detail-grid">
+          <div><div class="detail-label">Ticket No.</div><div class="detail-value mono"><?= e($d['ticket_number'] ?? '') ?></div></div>
+          <div><div class="detail-label">Status</div><div class="detail-value"><?= e($d['status'] ?? '') ?></div></div>
+          <div><div class="detail-label">Booking Ref</div><div class="detail-value mono"><?= e($d['booking_ref'] ?? '') ?></div></div>
+          <div><div class="detail-label">Customer</div><div class="detail-value"><?= e($d['customer_name'] ?? '') ?></div></div>
+          <div><div class="detail-label">Ticket Type</div><div class="detail-value"><?= e($d['ticket_type'] ?? '') ?></div></div>
+          <div><div class="detail-label">Visit Date</div><div class="detail-value"><?= e($d['visit_date'] ?? '') ?></div></div>
+          <div><div class="detail-label">Amount</div><div class="detail-value">₱<?= number_format((float)($d['total_amount'] ?? 0), 0) ?></div></div>
+          <div><div class="detail-label">Payment</div><div class="detail-value"><?= e($d['payment_status'] ?? '') ?></div></div>
+        </div>
+        <?php if (!empty($d['rides'])): ?>
+          <div style="margin-top:1rem"><div class="detail-label">Selected Rides</div>
+            <div class="rides-list"><?php foreach($d['rides'] as $r): ?><span class="ride-chip"><?= e($r) ?></span><?php endforeach; ?></div>
           </div>
-          <div class="result-row">
-            <span class="result-label">Booking Reference</span>
-            <span class="result-value"><?= e($details['booking_reference'] ?? '') ?></span>
-          </div>
-          <div class="result-row">
-            <span class="result-label">Visit Date</span>
-            <span><?= e($details['visit_date'] ?? '') ?></span>
-          </div>
-          <div class="result-row">
-            <span class="result-label">Ticket Number</span>
-            <span class="result-value"><?= e($details['ticket_number'] ?? '') ?></span>
-          </div>
-          <?php if (!empty($details['rides'])): ?>
-            <div class="result-row" style="align-items:flex-start;">
-              <span class="result-label">Included Rides</span>
-              <ul class="rides-list">
-                <?php foreach ($details['rides'] as $ride): ?>
-                  <li><?= e($ride) ?></li>
-                <?php endforeach; ?>
-              </ul>
-            </div>
-          <?php endif; ?>
-          <button class="btn-details" onclick="openPopup(<?= htmlspecialchars(json_encode($details), ENT_QUOTES, 'UTF-8') ?>)">
-            📋 View Full Booking Details
-          </button>
-        </div>
-
-      <?php elseif ($statusVal === 'USED'): ?>
-        <div class="result-card result-warning">
-          <div class="result-heading">⚠️ Ticket Already Used</div>
-          <p style="margin:0 0 1rem;">This ticket has already been scanned and used for entry.</p>
-          <?php if (!empty($details)): ?>
-            <button class="btn-details" style="background:#d97706;" onclick="openPopup(<?= htmlspecialchars(json_encode($details), ENT_QUOTES, 'UTF-8') ?>)">
-              📋 View Booking Details
-            </button>
-          <?php endif; ?>
-        </div>
-
-      <?php elseif ($statusVal === 'CANCELLED'): ?>
-        <div class="result-card result-error">
-          <div class="result-heading">🚫 Ticket Cancelled</div>
-          <p style="margin:0 0 1rem;">This ticket has been cancelled and cannot be used for entry.</p>
-          <?php if (!empty($details)): ?>
-            <button class="btn-details" style="background:#dc2626;" onclick="openPopup(<?= htmlspecialchars(json_encode($details), ENT_QUOTES, 'UTF-8') ?>)">
-              📋 View Booking Details
-            </button>
-          <?php endif; ?>
-        </div>
-
-      <?php elseif ($statusVal === 'EXPIRED'): ?>
-        <div class="result-card result-error">
-          <div class="result-heading">⏰ Ticket Expired</div>
-          <p style="margin:0 0 1rem;">This ticket has expired and is no longer valid.</p>
-          <?php if (!empty($details)): ?>
-            <button class="btn-details" style="background:#dc2626;" onclick="openPopup(<?= htmlspecialchars(json_encode($details), ENT_QUOTES, 'UTF-8') ?>)">
-              📋 View Booking Details
-            </button>
-          <?php endif; ?>
-        </div>
-
-      <?php else: ?>
-        <div class="result-card result-error">
-          <div class="result-heading">🚫 Entry Denied</div>
-          <p style="margin:0;"><?= e($result['error'] ?? 'An error occurred.') ?></p>
-        </div>
+        <?php endif; ?>
       <?php endif; ?>
-    <?php endif; ?>
-
-  </div><!-- /.scanner-card -->
-
-</div><!-- /.container -->
-
-<!-- Booking Details Popup -->
-<div class="modal-overlay" id="details-modal">
-  <div class="modal">
-    <div class="modal-header">
-      <h2>📋 Booking Details</h2>
-      <button class="modal-close" onclick="closePopup()" aria-label="Close">&times;</button>
     </div>
-    <div id="modal-body"></div>
-  </div>
+    <a href="scanner.php" class="scan-again-btn">🔄 Scan Another Ticket</a>
+
+  <?php else: ?>
+
+    <!-- Camera scanner -->
+    <div class="s-card">
+      <h3>📷 Camera Scanner</h3>
+      <div id="qr-reader"></div>
+      <div id="camera-status">Camera not started</div>
+      <div class="cam-btns">
+        <button class="btn-cam btn-start" id="btn-start" onclick="startCamera()">▶ Start Camera</button>
+        <button class="btn-cam btn-stop"  id="btn-stop"  onclick="stopCamera()">■ Stop Camera</button>
+      </div>
+    </div>
+
+    <div class="divider">or enter manually</div>
+
+    <!-- Manual input -->
+    <div class="s-card">
+      <h3>⌨️ Manual Entry</h3>
+      <form class="scan-form" method="get" action="scanner.php">
+        <input class="scan-input" type="text" name="ticket"
+               value="<?= e($ticketInput) ?>"
+               placeholder="e.g. TK-AP-XXXXX-001"
+               autocomplete="off" autofocus />
+        <button class="btn-scan" type="submit">Scan</button>
+      </form>
+    </div>
+
+  <?php endif; ?>
+
 </div>
 
 <!-- html5-qrcode library -->
 <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
 <script>
-let html5QrCode = null;
-
-document.getElementById('btn-start-cam').addEventListener('click', startCamera);
-document.getElementById('btn-stop-cam').addEventListener('click', stopCamera);
+var html5QrCode = null;
+var scannerStarted = false;
 
 function startCamera() {
-  document.getElementById('camera-status').textContent = 'Starting camera…';
+  if (scannerStarted) return;
+  var statusEl = document.getElementById('camera-status');
+  var btnStart = document.getElementById('btn-start');
+  var btnStop  = document.getElementById('btn-stop');
+
+  statusEl.textContent = 'Requesting camera access…';
+  btnStart.disabled = true;
+
   html5QrCode = new Html5Qrcode('qr-reader');
-  html5QrCode.start(
-    { facingMode: 'environment' },
-    { fps: 10, qrbox: { width: 250, height: 250 } },
-    onScanSuccess,
-    onScanError
-  ).then(() => {
-    document.getElementById('camera-status').textContent = 'Camera active — point at a QR code.';
-    document.getElementById('btn-start-cam').style.display = 'none';
-    document.getElementById('btn-stop-cam').style.display  = 'inline-block';
-  }).catch(err => {
-    document.getElementById('camera-status').textContent = 'Camera error: ' + err;
+
+  Html5Qrcode.getCameras().then(function(cameras) {
+    if (!cameras || cameras.length === 0) {
+      statusEl.textContent = '❌ No camera found. Use manual entry below.';
+      btnStart.disabled = false;
+      return;
+    }
+
+    // Prefer rear camera on mobile, use first available on desktop
+    var cameraId = cameras[0].id;
+    for (var i = 0; i < cameras.length; i++) {
+      var label = (cameras[i].label || '').toLowerCase();
+      if (label.indexOf('back') !== -1 || label.indexOf('rear') !== -1 || label.indexOf('environment') !== -1) {
+        cameraId = cameras[i].id;
+        break;
+      }
+    }
+
+    html5QrCode.start(
+      cameraId,
+      {
+        fps: 15,
+        qrbox: function(w, h) {
+          var size = Math.min(w, h) * 0.7;
+          return { width: size, height: size };
+        },
+        aspectRatio: 1.0
+      },
+      function(decodedText) {
+        // QR scanned — stop camera and process
+        stopCamera();
+        processScannedCode(decodedText);
+      },
+      function(err) { /* ignore scan errors — they fire constantly while scanning */ }
+    ).then(function() {
+      scannerStarted = true;
+      btnStart.style.display = 'none';
+      btnStop.style.display  = 'flex';
+      statusEl.innerHTML = '<span style="color:#16a34a;font-weight:700;">🟢 Camera active — point QR code at the box</span>';
+    }).catch(function(err) {
+      btnStart.disabled = false;
+      statusEl.textContent = '❌ ' + err + ' — Try allowing camera in browser settings.';
+    });
+
+  }).catch(function(err) {
+    btnStart.disabled = false;
+    statusEl.textContent = '❌ Camera access denied. Please allow camera permission and try again.';
   });
 }
 
 function stopCamera() {
-  if (html5QrCode) {
-    html5QrCode.stop().then(() => {
+  if (html5QrCode && scannerStarted) {
+    html5QrCode.stop().then(function() {
       html5QrCode.clear();
       html5QrCode = null;
-      document.getElementById('camera-status').textContent = 'Camera stopped.';
-      document.getElementById('btn-start-cam').style.display = 'inline-block';
-      document.getElementById('btn-stop-cam').style.display  = 'none';
+      scannerStarted = false;
+      var btnStart = document.getElementById('btn-start');
+      var btnStop  = document.getElementById('btn-stop');
+      if (btnStart) { btnStart.style.display = 'flex'; btnStart.disabled = false; }
+      if (btnStop)  btnStop.style.display = 'none';
+      var statusEl = document.getElementById('camera-status');
+      if (statusEl) statusEl.textContent = 'Camera stopped';
+    }).catch(function() {
+      scannerStarted = false;
     });
   }
 }
 
-function onScanSuccess(decodedText) {
-  stopCamera();
-  document.getElementById('camera-status').textContent = 'QR scanned: ' + decodedText;
-  // Auto-submit via AJAX
-  fetch('scanner.php?ajax=1&ticket=' + encodeURIComponent(decodedText))
-    .then(r => r.json())
-    .then(data => showAjaxResult(decodedText, data))
-    .catch(() => {
-      // Fallback: redirect to page
-      window.location.href = 'scanner.php?ticket=' + encodeURIComponent(decodedText);
-    });
+function processScannedCode(code) {
+  code = code.trim();
+  if (!code) return;
+
+  // Show processing state
+  var statusEl = document.getElementById('camera-status');
+  if (statusEl) statusEl.innerHTML = '<span style="color:#1e3a8a;font-weight:700;">⏳ Processing ticket…</span>';
+
+  // Redirect to scanner with the scanned code
+  window.location.href = 'scanner.php?ticket=' + encodeURIComponent(code);
 }
 
-function onScanError() { /* suppress per-frame errors */ }
-
-function showAjaxResult(ticketNum, data) {
-  const details = data.details || {};
-  const status  = data.status || (data.success ? 'USED' : '');
-
-  let html = '';
-  if (data.success) {
-    html = `<div class="result-card result-success" style="margin-top:0;">
-      <div class="result-heading">✅ Entry Granted — Ticket Marked as USED</div>
-      <div class="result-row"><span class="result-label">Customer Name</span><span>${esc(details.customer_name)}</span></div>
-      <div class="result-row"><span class="result-label">Booking Reference</span><span class="result-value">${esc(details.booking_reference)}</span></div>
-      <div class="result-row"><span class="result-label">Visit Date</span><span>${esc(details.visit_date)}</span></div>
-      <div class="result-row"><span class="result-label">Ticket Number</span><span class="result-value">${esc(details.ticket_number)}</span></div>
-      <button class="btn-details" onclick='openPopup(${JSON.stringify(details)})'>📋 View Full Booking Details</button>
-    </div>`;
-  } else if (status === 'USED') {
-    html = `<div class="result-card result-warning" style="margin-top:0;">
-      <div class="result-heading">⚠️ Ticket Already Used</div>
-      <p style="margin:0 0 1rem;">This ticket has already been scanned and used for entry.</p>
-      ${details.booking_reference ? `<button class="btn-details" style="background:#d97706;" onclick='openPopup(${JSON.stringify(details)})'>📋 View Booking Details</button>` : ''}
-    </div>`;
-  } else if (status === 'CANCELLED') {
-    html = `<div class="result-card result-error" style="margin-top:0;">
-      <div class="result-heading">🚫 Ticket Cancelled</div>
-      <p style="margin:0 0 1rem;">This ticket has been cancelled.</p>
-      ${details.booking_reference ? `<button class="btn-details" style="background:#dc2626;" onclick='openPopup(${JSON.stringify(details)})'>📋 View Booking Details</button>` : ''}
-    </div>`;
-  } else if (status === 'EXPIRED') {
-    html = `<div class="result-card result-error" style="margin-top:0;">
-      <div class="result-heading">⏰ Ticket Expired</div>
-      <p style="margin:0 0 1rem;">This ticket has expired.</p>
-      ${details.booking_reference ? `<button class="btn-details" style="background:#dc2626;" onclick='openPopup(${JSON.stringify(details)})'>📋 View Booking Details</button>` : ''}
-    </div>`;
-  } else {
-    html = `<div class="result-card result-error" style="margin-top:0;">
-      <div class="result-heading">🚫 Entry Denied</div>
-      <p style="margin:0;">${esc(data.error || 'An error occurred.')}</p>
-    </div>`;
-  }
-
-  // Inject result below the form
-  let existing = document.getElementById('ajax-result');
-  if (!existing) {
-    existing = document.createElement('div');
-    existing.id = 'ajax-result';
-    document.querySelector('.scanner-card').appendChild(existing);
-  }
-  existing.innerHTML = html;
-  existing.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-}
-
-function esc(str) {
-  if (!str) return '';
-  return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
-}
-
-// Booking details popup
-function openPopup(details) {
-  const statusClass = {
-    'ACTIVE':    'status-active',
-    'USED':      'status-used',
-    'CANCELLED': 'status-cancelled',
-    'EXPIRED':   'status-expired',
-  }[details.status] || '';
-
-  const payClass = details.payment_status === 'Paid' ? 'status-paid' : 'status-pending';
-
-  let ridesHtml = '';
-  if (details.rides && details.rides.length > 0) {
-    ridesHtml = details.rides.map(r => `🎢 ${esc(r)}`).join('<br>');
-  } else {
-    ridesHtml = '<span style="color:#6b7280;font-style:italic;">No rides assigned.</span>';
-  }
-
-  const bookedAt = details.booked_at
-    ? new Date(details.booked_at).toLocaleString('en-PH', { dateStyle: 'medium', timeStyle: 'short' })
-    : '—';
-
-  document.getElementById('modal-body').innerHTML = `
-    <table class="detail-table">
-      <tr><td>Reference No.</td><td>${esc(details.booking_reference)}</td></tr>
-      <tr><td>Ticket Number</td><td>${esc(details.ticket_number)}</td></tr>
-      <tr><td>Ticket Status</td><td><span class="status-badge ${statusClass}">${esc(details.status)}</span></td></tr>
-      <tr><td>Customer Name</td><td>${esc(details.customer_name)}</td></tr>
-      <tr><td>Customer Email</td><td>${esc(details.customer_email)}</td></tr>
-      <tr><td>Payment Status</td><td><span class="status-badge ${payClass}">${esc(details.payment_status)}</span></td></tr>
-      <tr><td>Booked At</td><td>${bookedAt}</td></tr>
-      <tr><td>Visit Date</td><td>${esc(details.visit_date)}</td></tr>
-      <tr><td>Ticket Type</td><td>${esc(details.ticket_type_name)}</td></tr>
-      <tr><td>Quantity</td><td>${esc(details.quantity)}</td></tr>
-      <tr><td>Total Amount</td><td>&#8369;${esc(details.total_amount)}</td></tr>
-      <tr><td style="vertical-align:top;">Included Rides</td><td>${ridesHtml}</td></tr>
-    </table>`;
-
-  document.getElementById('details-modal').classList.add('show');
-}
-
-function closePopup() {
-  document.getElementById('details-modal').classList.remove('show');
-}
-
-// Close modal on overlay click
-document.getElementById('details-modal').addEventListener('click', function(e) {
-  if (e.target === this) closePopup();
+// Auto-start camera when page loads (user can still click Start Camera if it fails)
+document.addEventListener('DOMContentLoaded', function() {
+  // Small delay to let the page render first
+  setTimeout(function() {
+    startCamera();
+  }, 500);
 });
 </script>
+
+<?php render_footer(); ?>
 </body>
 </html>

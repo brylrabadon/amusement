@@ -17,7 +17,7 @@ if (is_file($local)) {
 }
 
 defined('DB_HOST') || define('DB_HOST', (string)(getenv('AMUSEPARK_DB_HOST') ?: 'localhost'));
-defined('DB_NAME') || define('DB_NAME', (string)(getenv('AMUSEPARK_DB_NAME') ?: 'amusepark'));
+defined('DB_NAME') || define('DB_NAME', (string)(getenv('AMUSEPARK_DB_NAME') ?: 'amusement'));
 defined('DB_USER') || define('DB_USER', (string)(getenv('AMUSEPARK_DB_USER') ?: 'root'));
 defined('DB_PASS') || define('DB_PASS', (string)(getenv('AMUSEPARK_DB_PASS') ?: ''));
 

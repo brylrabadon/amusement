@@ -5,7 +5,7 @@ declare(strict_types=1);
 // Never commit config.local.php to git.
 
 define('DB_HOST', 'localhost');
-define('DB_NAME', 'amusepark');
+define('DB_NAME', 'amusement');
 define('DB_USER', 'root');
 define('DB_PASS', ''); // blank for default XAMPP
 
@@ -14,14 +14,14 @@ define('DB_PASS', ''); // blank for default XAMPP
 define('PAYMONGO_MODE', 'test');
 
 // TEST keys — from https://dashboard.paymongo.com (toggle Test Mode on)
-define('PAYMONGO_TEST_SECRET_KEY',     'sk_test_txyoJvPC3L2stkgneb54iMbk');
-define('PAYMONGO_TEST_PUBLIC_KEY',     'pk_test_rbJM5u5rUZ3x4QMhsR4Rvgmu');
-define('PAYMONGO_TEST_WEBHOOK_SECRET', 'whsk_AceR3g47wtTEx1W7h3aSgrwT');
+define('PAYMONGO_TEST_SECRET_KEY',     'sk_test_REPLACE_ME');
+define('PAYMONGO_TEST_PUBLIC_KEY',     'pk_test_REPLACE_ME');
+define('PAYMONGO_TEST_WEBHOOK_SECRET', 'whsk_REPLACE_ME');
 
 // LIVE keys — from https://dashboard.paymongo.com (toggle Test Mode off)
-define('PAYMONGO_LIVE_SECRET_KEY',     'sk_live_QJSfjqkFFezBEdS8ZnJ65qTF');
-define('PAYMONGO_LIVE_PUBLIC_KEY',     'pk_live_pnUuSBNV4Xsf5CXnzNsU1Hgy');
-define('PAYMONGO_LIVE_WEBHOOK_SECRET', 'whsk_AceR3g47wtTEx1W7h3aSgrwT');
+define('PAYMONGO_LIVE_SECRET_KEY',     'sk_live_REPLACE_ME');
+define('PAYMONGO_LIVE_PUBLIC_KEY',     'pk_live_REPLACE_ME');
+define('PAYMONGO_LIVE_WEBHOOK_SECRET', 'whsk_REPLACE_ME');
 
 // Active keys — auto-resolved from PAYMONGO_MODE
 define('PAYMONGO_SECRET_KEY',     PAYMONGO_MODE === 'live' ? PAYMONGO_LIVE_SECRET_KEY     : PAYMONGO_TEST_SECRET_KEY);
@@ -30,3 +30,11 @@ define('PAYMONGO_WEBHOOK_SECRET', PAYMONGO_MODE === 'live' ? PAYMONGO_LIVE_WEBHO
 
 // Dev bypass — auto-enabled in test mode, disabled in live mode
 define('PAYMONGO_DEV_BYPASS', PAYMONGO_MODE === 'test');
+
+// ── SMTP Mail (Gmail) ─────────────────────────────────────────
+define('SMTP_HOST',     'smtp.gmail.com');
+define('SMTP_PORT',     587);
+define('SMTP_USER',      'your_email@gmail.com');
+define('SMTP_PASS',      'your_app_password_here'); 
+define('MAILJET_API_KEY',    'YOUR_API_KEY');
+define('MAILJET_SECRET_KEY', 'YOUR_SECRET_KEY');

@@ -2,29 +2,41 @@
 declare(strict_types=1);
 
 define('DB_HOST', 'localhost');
-define('DB_NAME', 'amusepark');
+define('DB_NAME', 'amusement');
 define('DB_USER', 'root');
 define('DB_PASS', '');
 
 // ── PayMongo Mode ─────────────────────────────────────────────
 // Set to 'test' for development, 'live' for real payments
-define('PAYMONGO_MODE', 'test');
+define('PAYMONGO_MODE', 'live');
 
 // TEST keys (no real money moves)
-define('PAYMONGO_TEST_SECRET_KEY',     'sk_test_txyoJvPC3L2stkgneb54iMbk');
-define('PAYMONGO_TEST_PUBLIC_KEY',     'pk_test_rbJM5u5rUZ3x4QMhsR4Rvgmu');
-define('PAYMONGO_TEST_WEBHOOK_SECRET', 'whsk_AceR3g47wtTEx1W7h3aSgrwT');
+// Change these:
+define('PAYMONGO_TEST_SECRET_KEY',     'sk_test_REPLACE_ME');
+define('PAYMONGO_TEST_PUBLIC_KEY',     'pk_test_REPLACE_ME');
+define('PAYMONGO_TEST_WEBHOOK_SECRET', 'whsk_REPLACE_ME');
 
-// LIVE keys (real GCash payments)
-define('PAYMONGO_LIVE_SECRET_KEY',     'sk_live_QJSfjqkFFezBEdS8ZnJ65qTF');
-define('PAYMONGO_LIVE_PUBLIC_KEY',     'pk_live_pnUuSBNV4Xsf5CXnzNsU1Hgy');
-define('PAYMONGO_LIVE_WEBHOOK_SECRET', 'whsk_AceR3g47wtTEx1W7h3aSgrwT');
+define('PAYMONGO_LIVE_SECRET_KEY',     'sk_live_REPLACE_ME');
+define('PAYMONGO_LIVE_PUBLIC_KEY',     'pk_live_REPLACE_ME');
+define('PAYMONGO_LIVE_WEBHOOK_SECRET', 'whsk_REPLACE_ME');
 
 // Active keys — resolved from mode above
 define('PAYMONGO_SECRET_KEY',     PAYMONGO_MODE === 'live' ? PAYMONGO_LIVE_SECRET_KEY     : PAYMONGO_TEST_SECRET_KEY);
 define('PAYMONGO_PUBLIC_KEY',     PAYMONGO_MODE === 'live' ? PAYMONGO_LIVE_PUBLIC_KEY      : PAYMONGO_TEST_PUBLIC_KEY);
 define('PAYMONGO_WEBHOOK_SECRET', PAYMONGO_MODE === 'live' ? PAYMONGO_LIVE_WEBHOOK_SECRET  : PAYMONGO_TEST_WEBHOOK_SECRET);
 
-// Dev bypass — skips PayMongo payment check so you can test the full flow locally.
+// Dev bypass — skips PayMon                    test the full flow locally.
 // Automatically disabled in live mode.
-define('PAYMONGO_DEV_BYPASS', PAYMONGO_MODE === 'test');
+define('PAYMONGO_DEV_BYPASS', PAYMONGO_MODE === 'live');
+
+
+// ── Mailjet API (free 200/day, instant activation, no 2FA needed) ──
+// 1. Sign up at https://app.mailjet.com
+// 2. Go to Account Settings → API Keys → copy both keys below
+// 3. Go to Account Settings → Sender Domains & Addresses → add your Gmail as sender
+// Change these:
+define('MAILJET_API_KEY',    'YOUR_MAILJET_API_KEY_HERE');
+define('MAILJET_SECRET_KEY', 'YOUR_MAILJET_SECRET_KEY_HERE');
+define('SMTP_FROM',          'brylcabanes@gmail.com'); // must match verified sender in Mailjet
+define('SMTP_FROM_NAME',     'AmusePark');
+

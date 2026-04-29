@@ -56,7 +56,7 @@ function render_nav($user, string $active = ''): void {
   </a>
   <ul>
     <li><a href="<?= $root ?>staff/dashboard.php" <?= $active==='dashboard'?'class="active"':'' ?>>Dashboard</a></li>
-    <li><a href="<?= $root ?>staff/scanner.php"   <?= $active==='scanner'  ?'class="active"':'' ?>>🔍 Scanner</a></li>
+    <li><a href="<?= $root ?>staff/scanner.php"   <?= $active==='scanner'  ?'class="active"':'' ?>>Scanner</a></li>
     <li><a href="<?= $root ?>staff/bookings.php"  <?= $active==='bookings' ?'class="active"':'' ?>>Bookings</a></li>
     <li><a href="<?= $root ?>profile.php"         <?= $active==='profile'  ?'class="active"':'' ?>>Profile</a></li>
     <li><a href="<?= $root ?>logout.php" style="color:#f87171;font-weight:700;">Logout</a></li>
@@ -72,8 +72,13 @@ function render_nav($user, string $active = ''): void {
     Amuse<span>Park</span>
   </a>
   <ul>
-    <li><a href="<?= $root ?>index.php"       <?= $active==='home'     ?'class="active"':'' ?>>Home</a></li>
-    <li><a href="<?= $root ?>rides.php"       <?= $active==='rides'    ?'class="active"':'' ?>>Rides</a></li>
+    <?php 
+      $homeUrl = $root . 'index.php';
+      if ($user && ($user['role'] ?? '') === 'customer') {
+          $homeUrl = $root . 'customer/dashboard.php';
+      }
+    ?>
+    <li><a href="<?= $homeUrl ?>"       <?= $active==='home'     ?'class="active"':'' ?>>Home</a></li>    <li><a href="<?= $root ?>rides.php"       <?= $active==='rides'    ?'class="active"':'' ?>>Rides</a></li>
     <li><a href="<?= $root ?>contact.php"     <?= $active==='contact'  ?'class="active"':'' ?>>Contact</a></li>
     <?php if ($user): ?>
       <li><a href="<?= $root ?>my-bookings.php" <?= $active==='bookings'?'class="active"':'' ?>>My Bookings</a></li>
@@ -102,6 +107,38 @@ function render_nav($user, string $active = ''): void {
     </li>
   </ul>
 </nav>
+    <?php endif;
+
+    // Auto-logout beacon — fires when user closes tab/browser while logged in
+    // Does NOT fire on the payment step (step=2) since user switches to GCash and returns
+    if ($user): ?>
+    <?php endif;
+    // NOTE: Auto-logout on tab close removed — it caused logout on refresh.
+    // Sessions expire naturally and no-cache headers prevent back-button access.
+    if ($user): ?>
+<script>
+(function() {
+  // Only send abandoned payment notification when leaving step 2 without paying.
+  // No auto-logout beacon — it was causing logout on page refresh.
+  var _onPaymentPage = (window.location.href.indexOf('step=2') !== -1);
+  if (!_onPaymentPage) return;
+
+  var _paymentDone = false;
+  document.addEventListener('submit', function() { _paymentDone = true; });
+  document.addEventListener('click', function(e) {
+    var a = e.target.closest('a');
+    if (a && a.href) _paymentDone = true;
+  });
+
+  window.addEventListener('beforeunload', function() {
+    if (!_paymentDone) {
+      var fd = new FormData();
+      fd.append('action', 'notify_abandoned');
+      navigator.sendBeacon('<?= $root ?>tickets.php', fd);
+    }
+  });
+})();
+</script>
     <?php endif;
 }
 

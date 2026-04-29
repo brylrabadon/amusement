@@ -11,6 +11,7 @@ function current_user(): ?array
 
 function require_login(?string $role = null): array
 {
+    no_cache_headers();
     $u = current_user();
     if (!$u) {
         flash_set('error', 'Please log in first.');
@@ -25,11 +26,13 @@ function require_login(?string $role = null): array
 
 function require_admin(): array
 {
+    no_cache_headers();
     return require_login('admin');
 }
 
 function require_staff(): array
 {
+    no_cache_headers();
     $u = current_user();
     if (!$u) {
         flash_set('error', 'Please log in first.');
@@ -130,9 +133,24 @@ function auth_register(string $full_name, string $email, string $phone, string $
 function auth_logout(): void
 {
     unset($_SESSION['user']);
+    unset($_SESSION['booking_flow']);
+    unset($_SESSION['cart']);
+    session_regenerate_id(true);
     // Keep flash messages if present; otherwise destroy full session.
     if (empty($_SESSION)) {
         session_destroy();
     }
+}
+
+/**
+ * Send no-cache headers so the browser never serves a cached version
+ * of a protected page after logout or back-button navigation.
+ */
+function no_cache_headers(): void
+{
+    header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
+    header('Cache-Control: post-check=0, pre-check=0', false);
+    header('Pragma: no-cache');
+    header('Expires: Sat, 01 Jan 2000 00:00:00 GMT');
 }
 

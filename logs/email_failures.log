@@ -1,0 +1,33 @@
+[2026-04-04 08:51:44] FAILED ref=AP-TCYJ1U-A8D3E5 to=revechequintenita@gmail.com subject=Booking Cancelled – Ref: AP-TCYJ1U-A8D3E5 | AmusePark
+[2026-04-04 08:59:02] FAILED ref=AP-TCYJDU-CCC438 to=revechequintenita@gmail.com subject=Booking Cancelled – Ref: AP-TCYJDU-CCC438 | AmusePark
+[2026-04-04 09:10:31] FAILED ref=AP-TCYJSH-EE2453 to=revechequintenita@gmail.com subject=Booking Cancelled – Ref: AP-TCYJSH-EE2453 | AmusePark
+[2026-04-04 09:29:25] FAILED ref=AP-TCYKSR-EAF8A7 to=revechequintenita@gmail.com subject=Booking Cancelled – Ref: AP-TCYKSR-EAF8A7 | AmusePark
+[2026-04-07 18:56:18] SMTP ERROR to=brylcabanes@gmail.com err=SMTP Error: Could not authenticate.
+[2026-04-07 18:56:53] SMTP ERROR to=brylcabanes@gmail.com err=SMTP Error: Could not authenticate.
+[2026-04-07 18:59:42] SMTP ERROR to=brylcabanes@gmail.com err=SMTP Error: Could not authenticate.
+[2026-04-07 19:02:04] SMTP ERROR to=brylcabanes@gmail.com err=SMTP Error: Could not authenticate.
+[2026-04-07 19:22:28] BREVO ERROR to=terrenceparagoso@gmail.com http=403 resp={"message":"Unable to send email. Your SMTP account is not yet activated. Please contact us at contact@brevo.com to request activation","code":"permission_denied"}
+ curl=
+[2026-04-24 08:59:58] MAILJET ERROR to=julianaritzmagat@gmail.com http=0 resp= curl=Could not resolve host: api.mailjet.com
+[2026-04-24 09:00:23] MAILJET ERROR to=julianaritzmagat@gmail.com http=0 resp= curl=Could not resolve host: api.mailjet.com
+[2026-04-24 09:00:23] MAILJET ERROR to=julianaritzmagat@gmail.com http=0 resp= curl=Could not resolve host: api.mailjet.com
+[2026-04-24 09:01:04] MAILJET ERROR to=julianaritzmagat@gmail.com http=0 resp= curl=Could not resolve host: api.mailjet.com
+[2026-04-24 09:01:04] MAILJET ERROR to=julianaritzmagat@gmail.com http=0 resp= curl=Could not resolve host: api.mailjet.com
+[2026-04-24 09:01:18] MAILJET ERROR to=julianaritzmagat@gmail.com http=0 resp= curl=Could not resolve host: api.mailjet.com
+[2026-04-24 09:01:18] MAILJET ERROR to=julianaritzmagat@gmail.com http=0 resp= curl=Could not resolve host: api.mailjet.com
+[2026-04-24 09:01:18] MAILJET ERROR to=julianaritzmagat@gmail.com http=0 resp= curl=Could not resolve host: api.mailjet.com
+[2026-04-24 09:01:18] MAILJET ERROR to=julianaritzmagat@gmail.com http=0 resp= curl=Could not resolve host: api.mailjet.com
+[2026-04-24 09:01:19] MAILJET ERROR to=julianaritzmagat@gmail.com http=0 resp= curl=Could not resolve host: api.mailjet.com
+[2026-04-24 09:01:19] MAILJET ERROR to=julianaritzmagat@gmail.com http=0 resp= curl=Could not resolve host: api.mailjet.com
+[2026-04-24 09:01:19] MAILJET ERROR to=julianaritzmagat@gmail.com http=0 resp= curl=Could not resolve host: api.mailjet.com
+[2026-04-24 09:01:19] MAILJET ERROR to=julianaritzmagat@gmail.com http=0 resp= curl=Could not resolve host: api.mailjet.com
+[2026-04-24 09:01:19] MAILJET ERROR to=julianaritzmagat@gmail.com http=0 resp= curl=Could not resolve host: api.mailjet.com
+[2026-04-24 09:01:19] MAILJET ERROR to=julianaritzmagat@gmail.com http=0 resp= curl=Could not resolve host: api.mailjet.com
+[2026-04-24 09:01:19] MAILJET ERROR to=julianaritzmagat@gmail.com http=0 resp= curl=Could not resolve host: api.mailjet.com
+[2026-04-24 09:01:19] MAILJET ERROR to=julianaritzmagat@gmail.com http=0 resp= curl=Could not resolve host: api.mailjet.com
+[2026-04-24 09:01:32] MAILJET ERROR to=julianaritzmagat@gmail.com http=0 resp= curl=Could not resolve host: api.mailjet.com
+[2026-04-24 09:02:28] MAILJET ERROR to=julianaritzmagat@gmail.com http=0 resp= curl=Could not resolve host: api.mailjet.com
+[2026-04-24 09:08:35] MAILJET ERROR to=julianaritzmagat@gmail.com http=0 resp= curl=Could not resolve host: api.mailjet.com
+[2026-04-24 09:08:35] MAILJET ERROR to=julianaritzmagat@gmail.com http=0 resp= curl=Could not resolve host: api.mailjet.com
+[2026-04-24 09:08:35] MAILJET ERROR to=julianaritzmagat@gmail.com http=0 resp= curl=Could not resolve host: api.mailjet.com
+[2026-04-24 09:08:35] MAILJET ERROR to=julianaritzmagat@gmail.com http=0 resp= curl=Could not resolve host: api.mailjet.com

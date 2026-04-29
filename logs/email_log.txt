@@ -1,0 +1,89 @@
+[2026-04-04 08:51:44] FAILED ref=AP-TCYJ1U-A8D3E5 to=revechequintenita@gmail.com subject=Booking Cancelled – Ref: AP-TCYJ1U-A8D3E5 | AmusePark
+[2026-04-04 08:59:02] FAILED ref=AP-TCYJDU-CCC438 to=revechequintenita@gmail.com subject=Booking Cancelled – Ref: AP-TCYJDU-CCC438 | AmusePark
+[2026-04-04 09:10:31] FAILED ref=AP-TCYJSH-EE2453 to=revechequintenita@gmail.com subject=Booking Cancelled – Ref: AP-TCYJSH-EE2453 | AmusePark
+[2026-04-04 09:29:25] FAILED ref=AP-TCYKSR-EAF8A7 to=revechequintenita@gmail.com subject=Booking Cancelled – Ref: AP-TCYKSR-EAF8A7 | AmusePark
+[2026-04-07 18:33:14] FAILED verify to=terrenceparagoso@gmail.com
+[2026-04-07 18:35:37] FAILED verify to=terrenceparagoso@gmail.com
+[2026-04-07 18:44:21] FAILED via=mail() to=terrenceparagoso@gmail.com subject=Verify Your Email – AmusePark
+[2026-04-07 18:56:18] FAILED via=SMTP to=brylcabanes@gmail.com subject=Verify Your Email – AmusePark
+[2026-04-07 18:56:53] FAILED via=SMTP to=brylcabanes@gmail.com subject=Verify Your Email – AmusePark
+[2026-04-07 18:59:42] FAILED via=SMTP to=brylcabanes@gmail.com subject=Verify Your Email – AmusePark
+[2026-04-07 19:02:04] FAILED via=SMTP to=brylcabanes@gmail.com subject=Verify Your Email – AmusePark
+[2026-04-07 19:22:28] FAILED via=Brevo to=terrenceparagoso@gmail.com subject=Verify Your Email – AmusePark
+[2026-04-07 19:46:02] SENT via=Mailjet to=brylcabanes@gmail.com subject=Verify Your Email – AmusePark
+[2026-04-07 19:53:48] SENT via=Mailjet to=brylcabanes@gmail.com subject=Verify Your Email – AmusePark
+[2026-04-07 19:54:28] SENT via=Mailjet to=brylcabanes@gmail.com subject=Verify Your Email – AmusePark
+[2026-04-07 19:54:39] SENT via=Mailjet to=brylcabanes@gmail.com subject=Verify Your Email – AmusePark
+[2026-04-07 19:57:20] SENT via=Mailjet to=brylcabanes@gmail.com subject=Did you forget something? Complete your AmusePark booking – AP-TD4XVB-E44C1C
+[2026-04-07 20:01:50] SENT via=Mailjet to=brylcabanes@gmail.com subject=Booking Expired – Ref: AP-TD4XVB-E44C1C | AmusePark
+[2026-04-07 20:01:55] SENT via=Mailjet to=brylcabanes@gmail.com subject=⏳ Complete your AmusePark payment – AP-TD4Y30-7D67B8
+[2026-04-07 20:02:21] SENT via=Mailjet to=brylcabanes@gmail.com subject=⏳ Complete your AmusePark payment – AP-TD4Y30-7D67B8
+[2026-04-07 20:08:42] SENT via=Mailjet to=brylcabanes@gmail.com subject=Booking Expired – Ref: AP-TD4Y30-7D67B8 | AmusePark
+[2026-04-07 20:08:49] SENT via=Mailjet to=terrenceparagoso@gmail.com subject=Verify Your Email – AmusePark
+[2026-04-07 20:09:25] SENT via=Mailjet to=terrenceparagoso@gmail.com subject=⏳ Your AmusePark booking expired – AP-TD4YFJ-905ADE | Book again now
+[2026-04-07 20:22:33] SENT via=Mailjet to=terrenceparagoso@gmail.com subject=Booking Expired – Ref: AP-TD4YEG-D22C53 | AmusePark
+[2026-04-07 20:22:33] SENT via=Mailjet to=terrenceparagoso@gmail.com subject=Booking Expired – Ref: AP-TD4YFJ-905ADE | AmusePark
+[2026-04-07 20:22:37] SENT via=Mailjet to=terrenceparagoso@gmail.com subject=⏳ Complete your AmusePark payment now – AP-TD4Z1J-22F77E (link expires in 3 min)
+[2026-04-10 17:46:20] SENT via=Mailjet to=terrenceparagoso@gmail.com subject=Booking Expired – Ref: AP-TD4Z1J-22F77E | AmusePark
+[2026-04-10 17:52:23] SENT via=Mailjet to=terrenceparagoso@gmail.com subject=🎉 Booking Confirmed – AP-TDAC30-45984F | AmusePark
+[2026-04-10 18:00:14] SENT via=Mailjet to=terrenceparagoso@gmail.com subject=🎉 Booking Confirmed – AP-TDACG5-919140 | AmusePark
+[2026-04-10 18:06:16] SENT via=Mailjet to=terrenceparagoso@gmail.com subject=🎉 Booking Confirmed – AP-TDACQ1-7F1CE8 | AmusePark
+[2026-04-11 18:22:53] SENT via=Mailjet to=terrenceparagoso@gmail.com subject=Booking Expired – Ref: AP-TDC7RK-B03D3D | AmusePark
+[2026-04-11 18:23:48] SENT via=Mailjet to=brylcabanes@gmail.com subject=🎉 Booking Confirmed – AP-TDC863-48CD67 | AmusePark
+[2026-04-11 18:28:55] SENT via=Mailjet to=brylcabanes@gmail.com subject=🎉 Booking Confirmed – AP-TDC8DK-26783C | AmusePark
+[2026-04-11 18:35:07] SENT via=Mailjet to=terrenceparagoso@gmail.com subject=🎉 Booking Confirmed – AP-TDC8P9-DAF437 | AmusePark
+[2026-04-11 19:23:00] SENT via=Mailjet to=terrenceparagoso@gmail.com subject=⏳ Complete your AmusePark payment now – AP-TDCAY7-D76B17 (link expires in 3 min)
+[2026-04-14 14:12:27] SENT via=Mailjet to=terrenceparagoso@gmail.com subject=Booking Expired – Ref: AP-TDCAY7-D76B17 | AmusePark
+[2026-04-14 14:15:13] SENT via=Mailjet to=brylcabanes@gmail.com subject=🎉 Booking Confirmed – AP-TDHGKP-0885EE | AmusePark
+[2026-04-14 14:15:56] SENT via=Mailjet to=brylcabanes@gmail.com subject=⏳ Complete your AmusePark payment now – AP-TDHGQF-6787EB (link expires in 3 min)
+[2026-04-16 14:34:05] SENT via=Mailjet to=julianaritzmagat@gmail.com subject=🎉 Booking Confirmed – AP-TDL6VD-832F71 | AmusePark
+[2026-04-16 14:41:35] SENT via=Mailjet to=julianaritzmagat@gmail.com subject=Verify Your Email – AmusePark
+[2026-04-16 14:42:40] SENT via=Mailjet to=julianaritzmagat@gmail.com subject=⏳ Complete your AmusePark payment now – AP-TDL7AZ-CD327C (link expires in 3 min)
+[2026-04-16 14:44:05] SENT via=Mailjet to=julianaritzmagat@gmail.com subject=⏳ Complete your AmusePark payment now – AP-TDL7AZ-CD327C (link expires in 3 min)
+[2026-04-16 14:44:06] SENT via=Mailjet to=julianaritzmagat@gmail.com subject=⏳ Complete your AmusePark payment now – AP-TDL7AZ-CD327C (link expires in 3 min)
+[2026-04-16 14:44:07] SENT via=Mailjet to=julianaritzmagat@gmail.com subject=⏳ Complete your AmusePark payment now – AP-TDL7AZ-CD327C (link expires in 3 min)
+[2026-04-16 14:44:08] SENT via=Mailjet to=julianaritzmagat@gmail.com subject=⏳ Complete your AmusePark payment now – AP-TDL7AZ-CD327C (link expires in 3 min)
+[2026-04-16 14:44:11] SENT via=Mailjet to=julianaritzmagat@gmail.com subject=⏳ Complete your AmusePark payment now – AP-TDL7AZ-CD327C (link expires in 3 min)
+[2026-04-16 14:44:11] SENT via=Mailjet to=julianaritzmagat@gmail.com subject=⏳ Complete your AmusePark payment now – AP-TDL7AZ-CD327C (link expires in 3 min)
+[2026-04-16 14:44:12] SENT via=Mailjet to=julianaritzmagat@gmail.com subject=⏳ Complete your AmusePark payment now – AP-TDL7AZ-CD327C (link expires in 3 min)
+[2026-04-16 14:44:13] SENT via=Mailjet to=julianaritzmagat@gmail.com subject=⏳ Complete your AmusePark payment now – AP-TDL7AZ-CD327C (link expires in 3 min)
+[2026-04-16 14:47:02] SENT via=Mailjet to=julianaritzmagat@gmail.com subject=Booking Expired – Ref: AP-TDL7AZ-CD327C | AmusePark
+[2026-04-16 14:59:20] SENT via=Mailjet to=julianaritzmagat@gmail.com subject=⏳ Complete your AmusePark payment now – AP-TDL82N-84EA1B (link expires in 3 min)
+[2026-04-16 15:51:22] SENT via=Mailjet to=julianaritzmagat@gmail.com subject=Booking Expired – Ref: AP-TDL82N-84EA1B | AmusePark
+[2026-04-24 05:04:29] SENT via=Mailjet to=julianaritzmagat@gmail.com subject=Booking Expired – Ref: AP-TDLAHK-22CA0D | AmusePark
+[2026-04-24 08:59:58] FAILED via=Mailjet to=julianaritzmagat@gmail.com subject=Booking Expired – Ref: AP-TDZKKO-99B5BA | AmusePark
+[2026-04-24 09:00:23] FAILED via=Mailjet to=julianaritzmagat@gmail.com subject=⏳ Complete your AmusePark payment now – AP-TDZKRM-34B1A9 (link expires in 3 min)
+[2026-04-24 09:00:23] FAILED via=Mailjet to=julianaritzmagat@gmail.com subject=⏳ Complete your AmusePark payment now – AP-TDZKRM-34B1A9 (link expires in 3 min)
+[2026-04-24 09:01:04] FAILED via=Mailjet to=julianaritzmagat@gmail.com subject=⏳ Complete your AmusePark payment now – AP-TDZKRM-34B1A9 (link expires in 3 min)
+[2026-04-24 09:01:04] FAILED via=Mailjet to=julianaritzmagat@gmail.com subject=⏳ Complete your AmusePark payment now – AP-TDZKRM-34B1A9 (link expires in 3 min)
+[2026-04-24 09:01:18] FAILED via=Mailjet to=julianaritzmagat@gmail.com subject=⏳ Complete your AmusePark payment now – AP-TDZKRM-34B1A9 (link expires in 3 min)
+[2026-04-24 09:01:18] FAILED via=Mailjet to=julianaritzmagat@gmail.com subject=⏳ Complete your AmusePark payment now – AP-TDZKRM-34B1A9 (link expires in 3 min)
+[2026-04-24 09:01:18] FAILED via=Mailjet to=julianaritzmagat@gmail.com subject=⏳ Complete your AmusePark payment now – AP-TDZKRM-34B1A9 (link expires in 3 min)
+[2026-04-24 09:01:18] FAILED via=Mailjet to=julianaritzmagat@gmail.com subject=⏳ Complete your AmusePark payment now – AP-TDZKRM-34B1A9 (link expires in 3 min)
+[2026-04-24 09:01:19] FAILED via=Mailjet to=julianaritzmagat@gmail.com subject=⏳ Complete your AmusePark payment now – AP-TDZKRM-34B1A9 (link expires in 3 min)
+[2026-04-24 09:01:19] FAILED via=Mailjet to=julianaritzmagat@gmail.com subject=⏳ Complete your AmusePark payment now – AP-TDZKRM-34B1A9 (link expires in 3 min)
+[2026-04-24 09:01:19] FAILED via=Mailjet to=julianaritzmagat@gmail.com subject=⏳ Complete your AmusePark payment now – AP-TDZKRM-34B1A9 (link expires in 3 min)
+[2026-04-24 09:01:19] FAILED via=Mailjet to=julianaritzmagat@gmail.com subject=⏳ Complete your AmusePark payment now – AP-TDZKRM-34B1A9 (link expires in 3 min)
+[2026-04-24 09:01:19] FAILED via=Mailjet to=julianaritzmagat@gmail.com subject=⏳ Complete your AmusePark payment now – AP-TDZKRM-34B1A9 (link expires in 3 min)
+[2026-04-24 09:01:19] FAILED via=Mailjet to=julianaritzmagat@gmail.com subject=⏳ Complete your AmusePark payment now – AP-TDZKRM-34B1A9 (link expires in 3 min)
+[2026-04-24 09:01:19] FAILED via=Mailjet to=julianaritzmagat@gmail.com subject=⏳ Complete your AmusePark payment now – AP-TDZKRM-34B1A9 (link expires in 3 min)
+[2026-04-24 09:01:19] FAILED via=Mailjet to=julianaritzmagat@gmail.com subject=⏳ Complete your AmusePark payment now – AP-TDZKRM-34B1A9 (link expires in 3 min)
+[2026-04-24 09:01:32] FAILED via=Mailjet to=julianaritzmagat@gmail.com subject=⏳ Complete your AmusePark payment now – AP-TDZKRM-34B1A9 (link expires in 3 min)
+[2026-04-24 09:02:28] FAILED via=Mailjet to=julianaritzmagat@gmail.com subject=⏳ Complete your AmusePark payment now – AP-TDZKVY-DBC91A (link expires in 3 min)
+[2026-04-24 09:08:35] FAILED via=Mailjet to=julianaritzmagat@gmail.com subject=Booking Expired – Ref: AP-TDZKRM-34B1A9 | AmusePark
+[2026-04-24 09:08:35] FAILED via=Mailjet to=julianaritzmagat@gmail.com subject=Booking Expired – Ref: AP-TDZKVN-69E35B | AmusePark
+[2026-04-24 09:08:35] FAILED via=Mailjet to=julianaritzmagat@gmail.com subject=Booking Expired – Ref: AP-TDZKVY-E4EB9B | AmusePark
+[2026-04-24 09:08:35] FAILED via=Mailjet to=julianaritzmagat@gmail.com subject=Booking Expired – Ref: AP-TDZKVY-DBC91A | AmusePark
+[2026-04-24 09:14:28] SENT via=Mailjet to=julianaritzmagat@gmail.com subject=⏳ Complete your AmusePark payment now – AP-TDZL60-837B52 (link expires in 3 min)
+[2026-04-27 14:43:57] SENT via=Mailjet to=julianaritzmagat@gmail.com subject=⏳ Complete your AmusePark payment now – AP-TE5KK8-14302E (link expires in 3 min)
+[2026-04-27 15:39:35] SENT via=Mailjet to=julianaritzmagat@gmail.com subject=Booking Expired – Ref: AP-TE5KK8-14302E | AmusePark
+[2026-04-27 15:39:42] SENT via=Mailjet to=julianaritzmagat@gmail.com subject=⏳ Complete your AmusePark payment now – AP-TE5N9X-9270CB (link expires in 3 min)
+[2026-04-27 16:20:54] SENT via=Mailjet to=julianaritzmagat@gmail.com subject=Booking Expired – Ref: AP-TE5N9X-9270CB | AmusePark
+[2026-04-27 16:21:03] SENT via=Mailjet to=julianaritzmagat@gmail.com subject=⏳ Complete your AmusePark payment now – AP-TE5P6S-27FAA3 (link expires in 3 min)
+[2026-04-27 16:31:14] SENT via=Mailjet to=julianaritzmagat@gmail.com subject=Booking Expired – Ref: AP-TE5P6S-27FAA3 | AmusePark
+[2026-04-27 16:33:05] SENT via=Mailjet to=julianaritzmagat@gmail.com subject=⏳ Complete your AmusePark payment now – AP-TE5PQZ-9071E1 (link expires in 3 min)
+[2026-04-27 16:33:05] SENT via=Mailjet to=julianaritzmagat@gmail.com subject=⏳ Complete your AmusePark payment now – AP-TE5PQZ-9071E1 (link expires in 3 min)
+[2026-04-29 06:19:09] SENT via=Mailjet to=julianaritzmagat@gmail.com subject=Booking Expired – Ref: AP-TE5PQZ-9071E1 | AmusePark
+[2026-04-29 06:19:10] SENT via=Mailjet to=julianaritzmagat@gmail.com subject=Booking Expired – Ref: AP-TE5Q9D-B37AB1 | AmusePark
+[2026-04-29 06:19:11] SENT via=Mailjet to=julianaritzmagat@gmail.com subject=Booking Expired – Ref: AP-TE5Q9D-185A09 | AmusePark
+[2026-04-29 06:19:17] SENT via=Mailjet to=julianaritzmagat@gmail.com subject=⏳ Complete your AmusePark payment now – AP-TE8MNV-913ED6 (link expires in 3 min)

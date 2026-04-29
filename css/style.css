@@ -61,13 +61,13 @@ body { font-family: 'Poppins', sans-serif; background: var(--bg-light); color: v
 
 .site-footer {
   background: var(--primary-dark); color: #cbd5e1;
-  padding: 4rem 2rem; text-align: center;
+  padding: 2.5rem 2rem; text-align: center;
 }
 .site-footer .footer-logo {
   font-size: 1.8rem; font-weight: 800; color: #fff; margin-bottom: 1rem;
 }
 .site-footer .footer-logo span { color: var(--secondary); }
-.site-footer p { font-size: .95rem; max-width: 600px; margin: 0 auto; line-height: 1.8; }
+.site-footer p { font-size: .95rem; margin: 0 auto; line-height: 1.8; }
 
 /* Legacy nav — kept for admin pages that still use <nav class="admin-nav"> */
 nav { background: #fff; border-bottom: 1px solid #e2e8f0; padding: 0 2rem; height: 72px;
@@ -271,10 +271,10 @@ tr:hover td { background: #eff6ff; }
   min-height: 2.5rem;
 }
 
-/* STAFF NAV — teal/green accent to distinguish from admin */
-.staff-nav { background: #064e3b; }
+/* STAFF NAV — dark blue to match admin but distinct */
+.staff-nav { background: #0f172a; }
 .staff-nav .logo { color: #fff; }
-.staff-nav ul a { color: #a7f3d0; }
+.staff-nav ul a { color: #94a3b8; }
 .staff-nav ul a:hover, .staff-nav ul a.active { background: rgba(255,255,255,0.1); color: #fff; }
 
 /* Ride selection cards (tickets step 1) */
@@ -285,3 +285,49 @@ tr:hover td { background: #eff6ff; }
   box-shadow: 0 10px 20px rgba(30, 58, 138, 0.08);
 }
 .ride-disabled { pointer-events: none; opacity: 0.5; }
+
+/* ── Pagination ─────────────────────────────────────────────── */
+.pagination {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-top: 1.5rem;
+  flex-wrap: wrap;
+}
+.pagination-info {
+  font-size: .85rem;
+  color: #64748b;
+  font-weight: 600;
+}
+.pagination-pages {
+  display: inline-flex;
+  align-items: center;
+  gap: .25rem;
+  background: #f1f5f9;
+  border-radius: 999px;
+  padding: .4rem .6rem;
+  box-shadow: 0 2px 8px rgba(0,0,0,.06);
+}
+.pg-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  font-size: .88rem;
+  font-weight: 600;
+  text-decoration: none;
+  border: none;
+  color: #64748b;
+  background: transparent;
+  transition: all .2s;
+  cursor: pointer;
+  line-height: 1;
+}
+.pg-btn:hover { background: #1e3a8a; color: #fff; }
+.pg-btn.active { background: #1e3a8a; color: #fff; box-shadow: 0 4px 10px rgba(30,58,138,0.3); font-weight: 800; }
+.pg-btn.disabled { opacity: .35; pointer-events: none; cursor: not-allowed; }
+.pg-btn.pg-dots { cursor: default; font-size: .8rem; width: 28px; }
+.pg-btn.pg-dots:hover { background: transparent; color: #64748b; }

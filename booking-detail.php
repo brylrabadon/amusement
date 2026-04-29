@@ -8,6 +8,7 @@ if (!$user) {
     flash_set('error', 'Please log in.');
     redirect('login.php?next=' . urlencode('booking-detail.php?ref=' . urlencode((string)($_GET['ref'] ?? ''))));
 }
+no_cache_headers();
 
 $role = $user['role'] ?? 'customer';
 $pdo  = db();
@@ -105,53 +106,65 @@ if ($paySt === 'Pending' && $deadline !== '') {
   <title>Booking <?= e($ref) ?> - AmusePark</title>
   <link rel="stylesheet" href="css/style.css"/>
   <style>
-    body { background: #f1f5f9; }
-    .bd-wrap { max-width: 860px; margin: 0 auto; padding: 2rem 1.5rem 4rem; }
-    .bd-back { display: inline-flex; align-items: center; gap: .4rem; color: var(--primary); font-weight: 700; text-decoration: none; font-size: .9rem; margin-bottom: 1.5rem; }
-    .bd-back:hover { text-decoration: underline; }
+    body { background: #f8fafc; color: #1e293b; }
+    :root { --primary: #1e3a8a; --primary-dark: #172554; --dark: #0f172a; }
+    .bd-wrap { max-width: 900px; margin: 0 auto; padding: 3rem 1.5rem 5rem; }
+    .bd-back { display: inline-flex; align-items: center; gap: .5rem; color: var(--primary); font-weight: 700; text-decoration: none; font-size: .95rem; margin-bottom: 2rem; transition: transform .2s; }
+    .bd-back:hover { transform: translateX(-4px); }
 
     .bd-hero {
       background: linear-gradient(135deg, var(--dark) 0%, var(--primary-dark) 100%);
-      padding: 3.5rem 2rem; color: #fff; text-align: center; position: relative; overflow: hidden;
+      padding: 4rem 3rem; color: #fff; text-align: left; position: relative; overflow: hidden;
+      border-radius: 2.5rem; margin-bottom: 2rem;
+      display: flex; justify-content: space-between; align-items: center; gap: 2rem;
+      box-shadow: 0 20px 40px rgba(15, 23, 42, 0.1);
     }
-    .bd-ref { font-size: 1.6rem; font-weight: 900; letter-spacing: -.02em; margin-bottom: .25rem; }
-    .bd-sub { font-size: .9rem; opacity: .8; }
-    .bd-badges { display: flex; gap: .5rem; flex-wrap: wrap; margin-top: .75rem; }
-    .bd-badge { padding: .3rem .85rem; border-radius: 999px; font-size: .78rem; font-weight: 800; }
+    .bd-hero::before {
+      content: ''; position: absolute; inset: 0;
+      background: url('https://www.transparenttextures.com/patterns/cubes.png'); opacity: 0.05;
+    }
+    .bd-ref { font-size: 2.2rem; font-weight: 900; letter-spacing: -.03em; margin-bottom: .25rem; position: relative; z-index: 1; }
+    .bd-sub { font-size: 1rem; opacity: .7; font-weight: 500; position: relative; z-index: 1; }
+    .bd-badges { display: flex; gap: .75rem; flex-wrap: wrap; margin-top: 1.25rem; position: relative; z-index: 1; }
+    .bd-badge { padding: .4rem 1rem; border-radius: 999px; font-size: .8rem; font-weight: 800; text-transform: uppercase; letter-spacing: .05em; }
 
-    .bd-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.25rem; margin-bottom: 1.25rem; }
-    .bd-card { background: #fff; border: 1px solid #e5e7eb; border-radius: 1rem; padding: 1.5rem; }
-    .bd-card-title { font-size: .78rem; font-weight: 800; text-transform: uppercase; letter-spacing: .06em; color: #9ca3af; margin-bottom: 1rem; }
-    .bd-row { display: flex; justify-content: space-between; align-items: flex-start; gap: .5rem; padding: .5rem 0; border-bottom: 1px solid #f3f4f6; font-size: .9rem; }
+    .bd-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-bottom: 1.5rem; }
+    .bd-card { background: #fff; border: 1px solid #e2e8f0; border-radius: 1.5rem; padding: 2rem; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); }
+    .bd-card-title { font-size: .85rem; font-weight: 800; text-transform: uppercase; letter-spacing: .1em; color: #64748b; margin-bottom: 1.5rem; display: flex; align-items: center; gap: .5rem; }
+    .bd-row { display: flex; justify-content: space-between; align-items: center; gap: 1rem; padding: .75rem 0; border-bottom: 1px solid #f1f5f9; font-size: .95rem; }
     .bd-row:last-child { border-bottom: none; }
-    .bd-lbl { color: #6b7280; flex-shrink: 0; }
-    .bd-val { font-weight: 600; color: #111827; text-align: right; }
+    .bd-lbl { color: #64748b; font-weight: 500; }
+    .bd-val { font-weight: 700; color: #0f172a; }
 
-    .bd-tickets { background: #fff; border: 1px solid #e5e7eb; border-radius: 1rem; padding: 1.5rem; margin-bottom: 1.25rem; }
+    .bd-tickets { background: #fff; border: 1px solid #e2e8f0; border-radius: 1.5rem; padding: 2rem; margin-bottom: 1.5rem; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); }
     .bd-ticket-item {
-      display: flex; align-items: center; gap: 1rem;
-      background: #f9fafb; border: 1px solid #e5e7eb; border-radius: .75rem;
-      padding: .85rem 1rem; margin-bottom: .6rem;
+      display: flex; align-items: center; gap: 1.25rem;
+      background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 1rem;
+      padding: 1.25rem; margin-bottom: .75rem; transition: transform .2s;
     }
-    .bd-ticket-item:last-child { margin-bottom: 0; }
-    .bd-ticket-qr { width: 64px; height: 64px; border-radius: .4rem; flex-shrink: 0; }
-    .bd-ticket-num { font-family: monospace; font-weight: 800; color: var(--primary); font-size: .9rem; }
-    .bd-ticket-status { font-size: .75rem; font-weight: 700; padding: .15rem .55rem; border-radius: 999px; }
+    .bd-ticket-item:hover { transform: translateY(-2px); border-color: var(--primary); }
+    .bd-ticket-qr { width: 80px; height: 80px; border-radius: .75rem; flex-shrink: 0; background: #fff; padding: .5rem; border: 1px solid #e2e8f0; }
+    .bd-ticket-info { flex: 1; }
+    .bd-ticket-num { font-family: 'JetBrains Mono', monospace; font-weight: 800; color: var(--primary); font-size: 1rem; margin-bottom: .25rem; }
+    .bd-ticket-status { font-size: .75rem; font-weight: 800; padding: .25rem .75rem; border-radius: 999px; text-transform: uppercase; }
 
-    .bd-rides { background: #fff; border: 1px solid #e5e7eb; border-radius: 1rem; padding: 1.5rem; margin-bottom: 1.25rem; }
-    .bd-ride-chip { display: inline-flex; align-items: center; gap: .35rem; background: #eff6ff; color: var(--primary); border: 1px solid #dbeafe; border-radius: .5rem; padding: .3rem .75rem; font-size: .82rem; font-weight: 700; margin: .25rem; }
+    .bd-rides { background: #fff; border: 1px solid #e2e8f0; border-radius: 1.5rem; padding: 2rem; margin-bottom: 1.5rem; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); }
+    .bd-ride-chip { display: inline-flex; align-items: center; gap: .5rem; background: #eff6ff; color: var(--primary); border: 1.5px solid #dbeafe; border-radius: .75rem; padding: .5rem 1rem; font-size: .9rem; font-weight: 700; margin: .35rem; transition: all .2s; }
+    .bd-ride-chip:hover { background: #dbeafe; transform: scale(1.05); }
 
     .bd-countdown {
-      background: #fef3c7; border: 1px solid #fcd34d; border-radius: .85rem;
-      padding: 1rem 1.5rem; display: flex; align-items: center; gap: 1rem; margin-bottom: 1.25rem;
+      background: #fffbeb; border: 2px solid #fef3c7; border-radius: 1.25rem;
+      padding: 1.5rem 2rem; display: flex; align-items: center; gap: 1.5rem; margin-bottom: 1.5rem;
+      box-shadow: 0 10px 15px -3px rgba(251, 191, 36, 0.1);
     }
-    .bd-countdown.urgent { background: #fee2e2; border-color: #fca5a5; }
-    .bd-countdown .timer { font-size: 1.5rem; font-weight: 900; color: #92400e; }
-    .bd-countdown.urgent .timer { color: #991b1b; }
+    .bd-countdown.urgent { background: #fef2f2; border-color: #fee2e2; }
+    .bd-countdown .timer { font-size: 2rem; font-weight: 900; color: #92400e; letter-spacing: -0.02em; }
+    .bd-countdown.urgent .timer { color: #dc2626; }
 
     @media (max-width: 640px) {
       .bd-grid { grid-template-columns: 1fr; }
-      .bd-hero { padding: 1.5rem; }
+      .bd-hero { flex-direction: column; text-align: center; padding: 2.5rem 1.5rem; }
+      .bd-hero > div:last-child { text-align: center !important; }
     }
   </style>
 </head>
@@ -164,8 +177,8 @@ if ($paySt === 'Pending' && $deadline !== '') {
   <!-- Hero -->
   <div class="bd-hero">
     <div>
-      <div class="bd-ref"><?= e($ref) ?></div>
       <div class="bd-sub">Booking Reference</div>
+      <div class="bd-ref"><?= e($ref) ?></div>
       <div class="bd-badges">
         <span class="bd-badge" style="background:<?= $pc['bg'] ?>;color:<?= $pc['color'] ?>;">
           <?= e($paySt) ?>
@@ -176,155 +189,104 @@ if ($paySt === 'Pending' && $deadline !== '') {
       </div>
     </div>
     <div style="text-align:right;">
-      <div style="font-size:2rem;font-weight:900;color:#facc15;">
+      <div style="font-size:1rem;opacity:.7;font-weight:500;margin-bottom:.25rem;">Total Amount Paid</div>
+      <div style="font-size:2.8rem;font-weight:900;color:#facc15;letter-spacing:-.03em;">
         ₱<?= number_format((float)($booking['total_amount'] ?? 0), 0) ?>
       </div>
-      <div style="font-size:.85rem;opacity:.8;"><?= e($booking['ticket_type_name'] ?? '') ?> × <?= (int)($booking['quantity'] ?? 1) ?></div>
+      <div style="font-size:.95rem;opacity:.8;font-weight:600;"><?= e($booking['ticket_type_name'] ?? '') ?> × <?= (int)($booking['quantity'] ?? 1) ?></div>
     </div>
   </div>
 
   <!-- 3-min countdown if still pending -->
   <?php if ($paySt === 'Pending' && $secondsLeft > 0): ?>
     <div class="bd-countdown" id="bd-countdown">
-      <span style="font-size:1.5rem;">⏱</span>
+      <span style="font-size:2.5rem;">⏱</span>
       <div>
         <div class="timer" id="bd-timer"><?= gmdate('i:s', $secondsLeft) ?></div>
-        <div style="font-size:.82rem;color:#b45309;">Payment deadline — booking cancels automatically</div>
+        <div style="font-size:.95rem;color:#b45309;font-weight:600;">Payment deadline — booking will be cancelled automatically</div>
       </div>
       <?php if ($deadline !== ''): ?>
-        <div style="margin-left:auto;font-size:.82rem;color:#92400e;">
-          Deadline: <strong><?= e($deadline) ?></strong>
+        <div style="margin-left:auto;text-align:right;">
+          <div style="font-size:.8rem;color:#92400e;text-transform:uppercase;letter-spacing:.05em;font-weight:800;margin-bottom:.2rem;">Expires At</div>
+          <div style="font-size:.95rem;color:#1e293b;font-weight:700;"><?= date('h:i A', strtotime($deadline)) ?></div>
         </div>
       <?php endif; ?>
     </div>
     <script>
-    (function() {
-      var s = <?= (int)$secondsLeft ?>;
+    (function(){
+      var left = <?= $secondsLeft ?>;
       var el = document.getElementById('bd-timer');
-      var box = document.getElementById('bd-countdown');
-      var iv = setInterval(function() {
-        s--;
-        if (s <= 0) { clearInterval(iv); el.textContent = 'EXPIRED'; box.classList.add('urgent'); return; }
-        var m = Math.floor(s/60), sec = s%60;
-        el.textContent = m + ':' + (sec < 10 ? '0' : '') + sec;
-        if (s <= 30) box.classList.add('urgent');
-      }, 1000);
+      var wrap = document.getElementById('bd-countdown');
+      var iv = setInterval(function(){
+        left--;
+        if(left <= 0){
+          clearInterval(iv);
+          window.location.reload();
+          return;
+        }
+        var m = Math.floor(left/60), s = left%60;
+        el.textContent = m + ':' + (s<10?'0':'') + s;
+        if(left <= 30) wrap.classList.add('urgent');
+      },1000);
     })();
     </script>
-  <?php elseif ($paySt === 'Pending' && $secondsLeft === 0 && $deadline !== ''): ?>
-    <div class="bd-countdown urgent">
-      <span style="font-size:1.5rem;">⏰</span>
-      <div>
-        <div class="timer">EXPIRED</div>
-        <div style="font-size:.82rem;color:#991b1b;">Payment deadline passed — booking will be cancelled shortly</div>
-      </div>
-    </div>
   <?php endif; ?>
 
-  <!-- Details grid -->
   <div class="bd-grid">
-    <!-- Customer info -->
     <div class="bd-card">
-      <div class="bd-card-title">👤 Customer Information</div>
-      <div class="bd-row"><span class="bd-lbl">Name</span><span class="bd-val"><?= e($booking['customer_name'] ?? '') ?></span></div>
-      <div class="bd-row"><span class="bd-lbl">Email</span><span class="bd-val"><?= e($booking['customer_email'] ?? '') ?></span></div>
-      <div class="bd-row"><span class="bd-lbl">Phone</span><span class="bd-val"><?= e($booking['customer_phone'] ?? '—') ?></span></div>
+      <div class="bd-card-title">👤 Customer Info</div>
+      <div class="bd-row"><span class="bd-lbl">Name</span> <span class="bd-val"><?= e($booking['customer_name'] ?? '—') ?></span></div>
+      <div class="bd-row"><span class="bd-lbl">Email</span> <span class="bd-val"><?= e($booking['customer_email'] ?? '—') ?></span></div>
+      <div class="bd-row"><span class="bd-lbl">Phone</span> <span class="bd-val"><?= e($booking['customer_phone'] ?? '—') ?></span></div>
     </div>
-
-    <!-- Ticket info -->
     <div class="bd-card">
-      <div class="bd-card-title">🎟 Ticket Information</div>
-      <div class="bd-row"><span class="bd-lbl">Type</span><span class="bd-val"><?= e($booking['ticket_type_name'] ?? '') ?></span></div>
-      <div class="bd-row"><span class="bd-lbl">Quantity</span><span class="bd-val"><?= (int)($booking['quantity'] ?? 1) ?></span></div>
-      <div class="bd-row"><span class="bd-lbl">Unit Price</span><span class="bd-val">₱<?= number_format((float)($booking['unit_price'] ?? 0), 2) ?></span></div>
-      <div class="bd-row"><span class="bd-lbl">Total</span><span class="bd-val" style="color:var(--primary);font-size:1.05rem;">₱<?= number_format((float)($booking['total_amount'] ?? 0), 2) ?></span></div>
-      <div class="bd-row"><span class="bd-lbl">Visit Date</span><span class="bd-val"><?= e((string)($booking['visit_date'] ?? '')) ?></span></div>
-    </div>
-
-    <!-- Payment info -->
-    <div class="bd-card">
-      <div class="bd-card-title">💳 Payment Details</div>
-      <div class="bd-row"><span class="bd-lbl">Method</span><span class="bd-val"><?= e($booking['payment_method'] ?? 'QR Ph') ?></span></div>
-      <div class="bd-row"><span class="bd-lbl">Status</span>
-        <span class="bd-val">
-          <span style="background:<?= $pc['bg'] ?>;color:<?= $pc['color'] ?>;padding:.15rem .6rem;border-radius:999px;font-size:.8rem;font-weight:800;">
-            <?= e($paySt) ?>
-          </span>
-        </span>
-      </div>
-      <?php if (!empty($booking['payment_reference'])): ?>
-        <div class="bd-row"><span class="bd-lbl">Reference</span><span class="bd-val" style="font-family:monospace;font-size:.82rem;"><?= e($booking['payment_reference']) ?></span></div>
-      <?php endif; ?>
-      <?php if ($deadline !== ''): ?>
-        <div class="bd-row"><span class="bd-lbl">Deadline</span><span class="bd-val" style="color:#dc2626;"><?= e($deadline) ?></span></div>
-      <?php endif; ?>
-    </div>
-
-    <!-- Booking meta -->
-    <div class="bd-card">
-      <div class="bd-card-title">📅 Booking Meta</div>
-      <div class="bd-row"><span class="bd-lbl">Booked At</span><span class="bd-val"><?= e((string)($booking['created_at'] ?? '')) ?></span></div>
-      <div class="bd-row"><span class="bd-lbl">Updated At</span><span class="bd-val"><?= e((string)($booking['updated_at'] ?? '')) ?></span></div>
-      <div class="bd-row"><span class="bd-lbl">Booking Status</span>
-        <span class="bd-val">
-          <span style="background:<?= $sc['bg'] ?>;color:<?= $sc['color'] ?>;padding:.15rem .6rem;border-radius:999px;font-size:.8rem;font-weight:800;">
-            <?= e($bkSt) ?>
-          </span>
-        </span>
-      </div>
-      <?php if (!empty($booking['paymongo_intent_id'])): ?>
-        <div class="bd-row"><span class="bd-lbl">PayMongo PI</span><span class="bd-val" style="font-family:monospace;font-size:.75rem;"><?= e($booking['paymongo_intent_id']) ?></span></div>
-      <?php endif; ?>
+      <div class="bd-card-title">📅 Visit Details</div>
+      <div class="bd-row"><span class="bd-lbl">Visit Date</span> <span class="bd-val"><?= e($booking['visit_date'] ?? '—') ?></span></div>
+      <div class="bd-row"><span class="bd-lbl">Booked On</span> <span class="bd-val"><?= date('M d, Y h:i A', strtotime((string)$booking['created_at'])) ?></span></div>
+      <div class="bd-row"><span class="bd-lbl">Payment</span> <span class="bd-val"><?= e($booking['payment_method'] ?? '—') ?></span></div>
     </div>
   </div>
 
-  <!-- Selected Rides -->
+  <div class="bd-tickets">
+    <div class="bd-card-title">🎟 Individual Tickets</div>
+    <?php if (empty($tickets)): ?>
+      <p style="color:#94a3b8;font-style:italic;">No tickets found.</p>
+    <?php else: ?>
+      <div style="display:grid;grid-template-columns:repeat(auto-fill, minmax(350px, 1fr));gap:1rem;">
+        <?php foreach ($tickets as $t):
+          $tst = (string)($t['status'] ?? 'Active');
+          $tc  = $statusColors[ucfirst(strtolower($tst))] ?? ['bg'=>'#f1f5f9','color'=>'#475569'];
+        ?>
+          <div class="bd-ticket-item">
+            <div class="bd-ticket-qr">
+              <img src="https://api.qrserver.com/v1/create-qr-code/?size=100x100&data=<?= e(urlencode((string)$t['ticket_number'])) ?>" 
+                   alt="QR" style="width:100%;height:100%;display:block;">
+            </div>
+            <div class="bd-ticket-info">
+              <div style="font-size:.75rem;color:#64748b;font-weight:700;text-transform:uppercase;margin-bottom:.2rem;">Ticket Number</div>
+              <div class="bd-ticket-num"><?= e($t['ticket_number']) ?></div>
+              <span class="bd-ticket-status" style="background:<?= $tc['bg'] ?>;color:<?= $tc['color'] ?>;">
+                <?= e($tst) ?>
+              </span>
+            </div>
+          </div>
+        <?php endforeach; ?>
+      </div>
+    <?php endif; ?>
+  </div>
+
   <?php if (!empty($rides)): ?>
     <div class="bd-rides">
-      <div class="bd-card-title" style="font-size:.78rem;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:#9ca3af;margin-bottom:1rem;">🎢 Selected Rides</div>
-      <div>
+      <div class="bd-card-title">🎢 Included Rides</div>
+      <div style="display:flex;flex-wrap:wrap;margin:-.35rem;">
         <?php foreach ($rides as $r): ?>
-          <span class="bd-ride-chip">🎢 <?= e($r['name']) ?><?= !empty($r['category']) ? ' <span style="opacity:.6;font-weight:600;">· ' . e($r['category']) . '</span>' : '' ?></span>
+          <div class="bd-ride-chip">
+            <span>🎡</span> <?= e($r['name']) ?>
+          </div>
         <?php endforeach; ?>
       </div>
     </div>
   <?php endif; ?>
-
-  <!-- Individual Tickets -->
-  <?php if (!empty($tickets)): ?>
-    <div class="bd-tickets">
-      <div class="bd-card-title" style="font-size:.78rem;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:#9ca3af;margin-bottom:1rem;">🎫 Individual Tickets (<?= count($tickets) ?>)</div>
-      <?php
-        $tStatusColors = [
-          'ACTIVE'    => ['bg' => '#dcfce7', 'color' => '#166534'],
-          'USED'      => ['bg' => '#dbeafe', 'color' => '#1e40af'],
-          'CANCELLED' => ['bg' => '#fee2e2', 'color' => '#991b1b'],
-          'EXPIRED'   => ['bg' => '#fef9c3', 'color' => '#854d0e'],
-        ];
-      ?>
-      <?php foreach ($tickets as $t):
-        $tn  = (string)($t['ticket_number'] ?? '');
-        $tst = (string)($t['status'] ?? 'ACTIVE');
-        $tc  = $tStatusColors[$tst] ?? ['bg' => '#f1f5f9', 'color' => '#475569'];
-      ?>
-        <div class="bd-ticket-item">
-          <img class="bd-ticket-qr"
-               src="https://api.qrserver.com/v1/create-qr-code/?size=128x128&data=<?= e(urlencode($tn)) ?>"
-               alt="QR <?= e($tn) ?>" loading="lazy"/>
-          <div style="flex:1;">
-            <div class="bd-ticket-num"><?= e($tn) ?></div>
-            <?php if (!empty($t['scanned_at'])): ?>
-              <div style="font-size:.78rem;color:#6b7280;margin-top:.2rem;">Scanned: <?= e((string)$t['scanned_at']) ?></div>
-            <?php endif; ?>
-          </div>
-          <span class="bd-ticket-status" style="background:<?= $tc['bg'] ?>;color:<?= $tc['color'] ?>;">
-            <?= e($tst) ?>
-          </span>
-        </div>
-      <?php endforeach; ?>
-    </div>
-  <?php endif; ?>
-
 </div>
 </body>
 </html>

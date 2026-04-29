@@ -358,13 +358,13 @@ try {
                   <span style="font-size:1.1rem;">👥</span> <?= !empty($r['max_capacity']) ? (int)$r['max_capacity'] . ' max' : '20 max' ?>
                 </div>
                 <div style="display:flex;align-items:center;gap:.5rem;font-size:.9rem;color:var(--primary);font-weight:800;">
-                  ₱<?= number_format((float)($r['price'] ?? 0), 0) ?>
+                  <?= !empty($r['max_capacity']) ? (int)$r['max_capacity'] . ' max' : '20 max' ?>
                 </div>
               </div>
 
               <div style="margin-top:1.5rem;display:flex;gap:.75rem;">
-                <a href="rides.php" class="btn btn-primary" style="flex:1;padding:.6rem;font-size:.85rem;border-radius:10px;">Book Now</a>
-                <a href="rides.php" class="btn btn-outline" style="flex:1;padding:.6rem;font-size:.85rem;border-radius:10px;">Details</a>
+                <a href="tickets.php?pkg=<?= (int)($r['id'] ?? 0) ?>" class="btn btn-primary" style="flex:1;padding:.6rem;font-size:.85rem;border-radius:10px;text-align:center;text-decoration:none;background:#1e3a8a;color:#fff;font-weight:700;">Book Now</a>
+                <a href="rides.php" class="btn btn-outline" style="flex:1;padding:.6rem;font-size:.85rem;border-radius:10px;text-align:center;text-decoration:none;border:1.5px solid #e2e8f0;color:#475569;font-weight:700;">Details</a>
               </div>
             </div>
           </div>
@@ -410,6 +410,16 @@ try {
           </button>
         </div>
       <?php endforeach; ?>
+    </div>
+
+    <!-- Cart checkout bar — shown after adding items -->
+    <div id="home-cart-bar" style="display:none;margin-top:2rem;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);border-radius:1.25rem;padding:1.25rem 2rem;display:none;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:1rem;">
+      <div style="color:#fff;font-weight:700;font-size:.95rem;">
+        🛒 <span id="home-cart-count">0</span> item(s) in your cart
+      </div>
+      <a href="cart.php" style="background:#fbbf24;color:#000;padding:.75rem 2rem;border-radius:999px;font-weight:900;font-size:.95rem;text-decoration:none;">
+        View Cart &amp; Checkout →
+      </a>
     </div>
   </div>
 </section>
@@ -478,14 +488,23 @@ function addToCartHome(tid, btn) {
   })
   .then(function(r) { return r.json(); })
   .then(function(d) {
-    btn.textContent = '✓ Added to Cart!';
+    btn.textContent = '✓ Added!';
     btn.style.borderColor = '#86efac';
     btn.style.color = '#86efac';
+
+    // Update nav badge
     var badge = document.getElementById('cart-nav-badge');
     if (badge) {
       badge.textContent = d.count;
       badge.style.display = d.count > 0 ? 'inline-flex' : 'none';
     }
+
+    // Show cart checkout bar
+    var bar = document.getElementById('home-cart-bar');
+    var countEl = document.getElementById('home-cart-count');
+    if (bar) { bar.style.display = 'flex'; }
+    if (countEl) { countEl.textContent = d.count; }
+
     setTimeout(function() {
       btn.textContent = '🛒 Add to Cart';
       btn.style.borderColor = 'rgba(255,255,255,.3)';
@@ -498,6 +517,20 @@ function addToCartHome(tid, btn) {
     btn.disabled = false;
   });
 }
+
+// Show cart bar on load if cart already has items
+(function() {
+  fetch('cart.php?action=count')
+    .then(function(r) { return r.json(); })
+    .then(function(d) {
+      if (d.count > 0) {
+        var bar = document.getElementById('home-cart-bar');
+        var countEl = document.getElementById('home-cart-count');
+        if (bar) bar.style.display = 'flex';
+        if (countEl) countEl.textContent = d.count;
+      }
+    }).catch(function(){});
+})();
 </script>
 </body>
 </html>

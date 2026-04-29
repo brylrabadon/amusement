@@ -77,7 +77,10 @@ $cats      = ['All','Thrill','Family','Kids','Water','Classic'];
       border-radius: 12px; font-weight: 700; font-size: .95rem;
       text-align: center; justify-content: center; text-decoration: none; cursor: pointer;
       transition: all .3s; box-shadow: 0 4px 12px rgba(30, 58, 138, 0.2);
+      margin-top: auto;
     }
+    .card { display: flex; flex-direction: column; }
+    .card-body { display: flex; flex-direction: column; flex: 1; }
     .ride-book-btn:hover { background: var(--primary-dark); transform: translateY(-2px); color: #fff; }
     .ride-book-btn.disabled { background: #e2e8f0; color: #94a3b8; pointer-events: none; box-shadow: none; }
   </style>
@@ -137,8 +140,7 @@ $cats      = ['All','Thrill','Family','Kids','Water','Classic'];
               <?= !empty($r['min_height_cm'])    ? '<span>📏 ' . (int)$r['min_height_cm']    . 'cm</span>'  : '' ?>
               <?= !empty($r['max_capacity'])     ? '<span>👥 ' . (int)$r['max_capacity']     . ' max</span>': '' ?>
             </div>
-            <div class="ride-price">₱<?= number_format((float)($r['price'] ?? 0), 0) ?></div>
-          </div>
+            </div>
           <?php if ($status === 'Open'): ?>
             <a href="<?= $user ? 'tickets.php' : 'login.php?next=tickets.php' ?>" class="ride-book-btn">
               🎟 Book Now
